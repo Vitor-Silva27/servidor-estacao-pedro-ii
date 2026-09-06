@@ -227,7 +227,7 @@ dev             tsx watch src/server.ts
 build           prisma generate && tsc
 start           node dist/server.js
 test            jest --selectProjects unit
-test:e2e        docker compose --profile test up -d && prisma migrate deploy (com DATABASE_URL de teste) && jest --selectProjects e2e ; docker compose --profile test down
+test:e2e        sobe postgres-test e redis-test, aplica migrations com .env.test, roda jest e2e em série, remove só os serviços de teste (docker compose --profile test rm -sf postgres-test redis-test)
 prisma:migrate  prisma migrate dev
 prisma:seed     tsx prisma/seed.ts
 prisma:studio   prisma studio

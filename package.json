@@ -11,7 +11,7 @@
     "test:e2e": "npm run test:e2e:up && npm run test:e2e:run && npm run test:e2e:down",
     "test:e2e:up": "docker compose --profile test up -d --wait postgres-test redis-test",
     "test:e2e:run": "dotenv -e .env.test -- prisma migrate deploy && dotenv -e .env.test -- jest --selectProjects e2e --runInBand",
-    "test:e2e:down": "docker compose --profile test down",
+    "test:e2e:down": "docker compose --profile test rm -sf postgres-test redis-test",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "prisma db seed",
