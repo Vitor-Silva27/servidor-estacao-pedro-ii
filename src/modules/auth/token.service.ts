@@ -57,7 +57,7 @@ export class TokenService {
 
   private verify(token: string, secret: string): jwt.JwtPayload {
     try {
-      const payload = jwt.verify(token, secret);
+      const payload = jwt.verify(token, secret, { algorithms: ["HS256"] });
       if (typeof payload === "string") throw new Error("payload inesperado");
       return payload;
     } catch {
