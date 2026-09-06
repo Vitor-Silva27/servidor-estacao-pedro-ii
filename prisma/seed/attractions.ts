@@ -7,6 +7,7 @@ import { AttractionsRepository } from "../../src/modules/attractions/attractions
 import type { CreateAttractionInput } from "../../src/modules/attractions/attractions.schemas";
 import { AttractionsService } from "../../src/modules/attractions/attractions.service";
 import { createCache } from "../../src/shared/cache/cache";
+import { createPhotoManager } from "../../src/shared/photos/photos";
 import { createLocalStorage } from "../../src/shared/storage/localStorage";
 
 const IMAGES_DIR = path.join(__dirname, "images");
@@ -95,10 +96,11 @@ function extensionOf(fileName: string): string {
 }
 
 export async function seedAttractions(): Promise<void> {
+  const repo = new AttractionsRepository(prisma);
   const service = new AttractionsService(
-    new AttractionsRepository(prisma),
+    repo,
     createCache(redis),
-    createLocalStorage(UPLOADS_DIR),
+    createPhotoManager(repo, createLocalStorage(UPLOADS_DIR), (id) => `attractions/${id}`),
   );
 
   for (const { photos, ...input } of attractions) {

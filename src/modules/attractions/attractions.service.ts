@@ -1,7 +1,7 @@
 import type { Cache } from "../../shared/cache/cache";
 import { NotFoundError } from "../../shared/errors/AppError";
-import type { Storage } from "../../shared/storage/storage";
-import type { AttractionRecord, AttractionsRepository, PhotoRecord } from "./attractions.repository";
+import type { PhotoInput, PhotoManager, PhotoRow } from "../../shared/photos/photos";
+import type { AttractionRecord, AttractionsRepository } from "./attractions.repository";
 import {
   fieldsSchemaFor,
   type AttractionFields,
@@ -20,7 +20,7 @@ export type AttractionSummary = {
   trailLevel: TrailLevel | null;
 };
 
-export type PhotoOutput = { id: string; url: string; position: number };
+export type PhotoOutput = PhotoRow;
 
 export type AttractionDetail = AttractionSummary & {
   description: string;
@@ -35,13 +35,14 @@ export type AttractionDetail = AttractionSummary & {
   updatedAt: string;
 };
 
-export type PhotoInput = { buffer: Buffer; ext: string };
+export type { PhotoInput };
+
+export const attractionPhotosDir = (id: string) => `attractions/${id}`;
 
 const listKey = (type?: AttractionType) => `attractions:list:${type ?? "all"}`;
 const detailKey = (id: string) => `attractions:${id}`;
-const photosDir = (id: string) => `attractions/${id}`;
 
-function toPhoto(photo: PhotoRecord): PhotoOutput {
+function toPhoto(photo: PhotoRow): PhotoOutput {
   return { id: photo.id, url: photo.url, position: photo.position };
 }
 
@@ -89,7 +90,7 @@ export class AttractionsService {
   constructor(
     private readonly repo: AttractionsRepository,
     private readonly cache: Cache,
-    private readonly storage: Storage,
+    private readonly photos: PhotoManager,
   ) {}
 
   async list(type?: AttractionType): Promise<AttractionSummary[]> {
@@ -128,43 +129,28 @@ export class AttractionsService {
   async remove(id: string): Promise<void> {
     const existing = await this.require(id);
     await this.repo.delete(id);
-    await this.storage.removeDir(photosDir(id));
+    await this.photos.removeAll(id);
     await this.invalidate(id, existing.type);
   }
 
   async addPhoto(id: string, photo: PhotoInput): Promise<PhotoOutput> {
     const existing = await this.require(id);
-    const url = await this.storage.save(photosDir(id), photo.ext, photo.buffer);
-    const created = await this.repo.addPhoto(id, url);
-    if (!existing.coverPhotoId) {
-      await this.repo.setCover(id, created.id);
-    }
+    const created = await this.photos.add(existing, photo);
     await this.invalidate(id, existing.type);
-    return toPhoto(created);
+    return created;
   }
 
   async removePhoto(id: string, photoId: string): Promise<void> {
     const existing = await this.require(id);
-    const photo = existing.photos.find((p) => p.id === photoId);
-    if (!photo) throw new NotFoundError("Foto não encontrada");
-
-    if (existing.coverPhotoId === photoId) {
-      const next = existing.photos.find((p) => p.id !== photoId);
-      await this.repo.setCover(id, next?.id ?? null);
-    }
-    await this.repo.deletePhoto(photoId);
-    await this.storage.remove(photo.url);
+    await this.photos.remove(existing, photoId);
     await this.invalidate(id, existing.type);
   }
 
   async setCover(id: string, photoId: string): Promise<AttractionDetail> {
     const existing = await this.require(id);
-    if (!existing.photos.some((p) => p.id === photoId)) {
-      throw new NotFoundError("Foto não encontrada");
-    }
-    const row = await this.repo.setCover(id, photoId);
+    await this.photos.setCover(existing, photoId);
     await this.invalidate(id, existing.type);
-    return toDetail(row);
+    return toDetail(await this.require(id));
   }
 
   private async require(id: string): Promise<AttractionRecord> {

@@ -19,6 +19,7 @@ import { createCache } from "./shared/cache/cache";
 import { NotFoundError } from "./shared/errors/AppError";
 import { errorHandler } from "./shared/middlewares/errorHandler";
 import { createLocalStorage } from "./shared/storage/localStorage";
+import { createPhotoManager } from "./shared/photos/photos";
 
 function loadOpenApi() {
   const file = path.resolve(process.cwd(), "docs/openapi.yaml");
@@ -37,10 +38,13 @@ export function createApp() {
   });
   const users = new UsersRepository(prisma);
   const authService = new AuthService(users, tokens, redis);
+  const storage = createLocalStorage(UPLOADS_DIR);
+  const cache = createCache(redis);
+  const attractionsRepository = new AttractionsRepository(prisma);
   const attractionsService = new AttractionsService(
-    new AttractionsRepository(prisma),
-    createCache(redis),
-    createLocalStorage(UPLOADS_DIR),
+    attractionsRepository,
+    cache,
+    createPhotoManager(attractionsRepository, storage, (id) => `attractions/${id}`),
   );
 
   app.use("/health", createHealthRouter({ prisma, redis }));

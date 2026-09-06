@@ -1,7 +1,7 @@
 import { ZodError } from "zod";
 import { NotFoundError } from "../../shared/errors/AppError";
 import type { Cache } from "../../shared/cache/cache";
-import type { Storage } from "../../shared/storage/storage";
+import type { PhotoManager } from "../../shared/photos/photos";
 import type { AttractionRecord, AttractionsRepository, PhotoRecord } from "./attractions.repository";
 import { AttractionsService } from "./attractions.service";
 
@@ -45,9 +45,14 @@ function setup() {
     setCover: jest.fn(),
   } as unknown as jest.Mocked<AttractionsRepository>;
   const cache = { get: jest.fn(), set: jest.fn(), del: jest.fn() } as unknown as jest.Mocked<Cache>;
-  const storage = { save: jest.fn(), remove: jest.fn(), removeDir: jest.fn() } as unknown as jest.Mocked<Storage>;
-  const service = new AttractionsService(repo, cache, storage);
-  return { repo, cache, storage, service };
+  const photos = {
+    add: jest.fn(),
+    remove: jest.fn(),
+    setCover: jest.fn(),
+    removeAll: jest.fn(),
+  } as unknown as jest.Mocked<PhotoManager>;
+  const service = new AttractionsService(repo, cache, photos);
+  return { repo, cache, photos, service };
 }
 
 const waterfallInput = {
@@ -182,13 +187,13 @@ describe("AttractionsService.update", () => {
 
 describe("AttractionsService.remove", () => {
   it("apaga registro, pasta de arquivos e invalida cache", async () => {
-    const { repo, cache, storage, service } = setup();
+    const { repo, cache, photos, service } = setup();
     repo.findById.mockResolvedValue(record());
 
     await service.remove("a1");
 
     expect(repo.delete).toHaveBeenCalledWith("a1");
-    expect(storage.removeDir).toHaveBeenCalledWith("attractions/a1");
+    expect(photos.removeAll).toHaveBeenCalledWith("a1");
     expect(cache.del).toHaveBeenCalledWith("attractions:list:CACHOEIRA");
   });
 
@@ -199,99 +204,50 @@ describe("AttractionsService.remove", () => {
   });
 });
 
-describe("AttractionsService.addPhoto", () => {
-  it("salva no storage, cria a foto e a define como capa quando não havia", async () => {
-    const { repo, cache, storage, service } = setup();
-    repo.findById.mockResolvedValue(record());
-    storage.save.mockResolvedValue("/uploads/attractions/a1/p1.jpg");
-    repo.addPhoto.mockResolvedValue(photo("p1", 1));
+describe("AttractionsService fotos", () => {
+  it("addPhoto delega ao manager com a atração carregada e invalida cache", async () => {
+    const { repo, cache, photos, service } = setup();
+    const existing = record();
+    repo.findById.mockResolvedValue(existing);
+    photos.add.mockResolvedValue({ id: "p1", url: "/uploads/attractions/a1/p1.jpg", position: 1 });
 
     const result = await service.addPhoto("a1", { buffer: Buffer.from("x"), ext: "jpg" });
 
-    expect(storage.save).toHaveBeenCalledWith("attractions/a1", "jpg", Buffer.from("x"));
-    expect(repo.addPhoto).toHaveBeenCalledWith("a1", "/uploads/attractions/a1/p1.jpg");
-    expect(repo.setCover).toHaveBeenCalledWith("a1", "p1");
+    expect(photos.add).toHaveBeenCalledWith(existing, { buffer: Buffer.from("x"), ext: "jpg" });
     expect(result).toEqual({ id: "p1", url: "/uploads/attractions/a1/p1.jpg", position: 1 });
     expect(cache.del).toHaveBeenCalledWith("attractions:a1");
   });
 
-  it("não mexe na capa quando já existe", async () => {
-    const { repo, storage, service } = setup();
-    const p1 = photo("p1", 1);
-    repo.findById.mockResolvedValue(record({ coverPhotoId: "p1", coverPhoto: p1, photos: [p1] }));
-    storage.save.mockResolvedValue("/uploads/attractions/a1/p2.jpg");
-    repo.addPhoto.mockResolvedValue(photo("p2", 2));
-
-    await service.addPhoto("a1", { buffer: Buffer.from("x"), ext: "jpg" });
-
-    expect(repo.setCover).not.toHaveBeenCalled();
-  });
-});
-
-describe("AttractionsService.removePhoto", () => {
-  it("ao apagar a capa, promove a foto de menor posição restante", async () => {
-    const { repo, storage, service } = setup();
-    const p1 = photo("p1", 1);
-    const p2 = photo("p2", 2);
-    const p3 = photo("p3", 3);
-    repo.findById.mockResolvedValue(record({ coverPhotoId: "p2", coverPhoto: p2, photos: [p1, p2, p3] }));
-
-    await service.removePhoto("a1", "p2");
-
-    expect(repo.setCover).toHaveBeenCalledWith("a1", "p1");
-    expect(repo.deletePhoto).toHaveBeenCalledWith("p2");
-    expect(storage.remove).toHaveBeenCalledWith("/uploads/attractions/a1/p2.jpg");
-  });
-
-  it("ao apagar a última foto, a capa fica null", async () => {
-    const { repo, service } = setup();
-    const p1 = photo("p1", 1);
-    repo.findById.mockResolvedValue(record({ coverPhotoId: "p1", coverPhoto: p1, photos: [p1] }));
+  it("removePhoto delega ao manager e invalida cache", async () => {
+    const { repo, cache, photos, service } = setup();
+    const existing = record({ photos: [photo("p1", 1)] });
+    repo.findById.mockResolvedValue(existing);
 
     await service.removePhoto("a1", "p1");
 
-    expect(repo.setCover).toHaveBeenCalledWith("a1", null);
+    expect(photos.remove).toHaveBeenCalledWith(existing, "p1");
+    expect(cache.del).toHaveBeenCalledWith("attractions:a1");
   });
 
-  it("não mexe na capa ao apagar outra foto", async () => {
-    const { repo, service } = setup();
+  it("setCover delega ao manager, invalida cache e devolve o detalhe atualizado", async () => {
+    const { repo, cache, photos, service } = setup();
     const p1 = photo("p1", 1);
     const p2 = photo("p2", 2);
-    repo.findById.mockResolvedValue(record({ coverPhotoId: "p1", coverPhoto: p1, photos: [p1, p2] }));
-
-    await service.removePhoto("a1", "p2");
-
-    expect(repo.setCover).not.toHaveBeenCalled();
-    expect(repo.deletePhoto).toHaveBeenCalledWith("p2");
-  });
-
-  it("lança 404 se a foto não pertence à atração", async () => {
-    const { repo, service } = setup();
-    repo.findById.mockResolvedValue(record({ photos: [photo("p1", 1)] }));
-    await expect(service.removePhoto("a1", "p9")).rejects.toThrow(NotFoundError);
-    expect(repo.deletePhoto).not.toHaveBeenCalled();
-  });
-});
-
-describe("AttractionsService.setCover", () => {
-  it("define a capa e invalida cache", async () => {
-    const { repo, cache, service } = setup();
-    const p1 = photo("p1", 1);
-    const p2 = photo("p2", 2);
-    repo.findById.mockResolvedValue(record({ coverPhotoId: "p1", coverPhoto: p1, photos: [p1, p2] }));
-    repo.setCover.mockResolvedValue(record({ coverPhotoId: "p2", coverPhoto: p2, photos: [p1, p2] }));
+    const before = record({ coverPhotoId: "p1", coverPhoto: p1, photos: [p1, p2] });
+    const after = record({ coverPhotoId: "p2", coverPhoto: p2, photos: [p1, p2] });
+    repo.findById.mockResolvedValueOnce(before).mockResolvedValueOnce(after);
 
     const result = await service.setCover("a1", "p2");
 
-    expect(repo.setCover).toHaveBeenCalledWith("a1", "p2");
+    expect(photos.setCover).toHaveBeenCalledWith(before, "p2");
     expect(result.coverUrl).toBe("/uploads/attractions/a1/p2.jpg");
     expect(cache.del).toHaveBeenCalledWith("attractions:a1");
   });
 
-  it("lança 404 com foto de outra atração", async () => {
-    const { repo, service } = setup();
-    repo.findById.mockResolvedValue(record({ photos: [photo("p1", 1)] }));
+  it("propaga 404 do manager", async () => {
+    const { repo, photos, service } = setup();
+    repo.findById.mockResolvedValue(record());
+    photos.setCover.mockRejectedValue(new NotFoundError("Foto não encontrada"));
     await expect(service.setCover("a1", "p-outra")).rejects.toThrow(NotFoundError);
-    expect(repo.setCover).not.toHaveBeenCalled();
   });
 });
