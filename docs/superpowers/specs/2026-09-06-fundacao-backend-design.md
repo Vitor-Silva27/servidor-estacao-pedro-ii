@@ -265,7 +265,7 @@ Cobrem:
 
 ## 11. Integração com o app
 
-Mudanças no repositório do app (`Estacao-Pedro-II`), mínimas para começar a usar o servidor:
+Mudanças no repositório do app (`Estacao-Pedro-II`), feitas na branch `joao/changes` criada a partir de `master`. São as mínimas para começar a usar o servidor:
 
 - `src/services/api.ts`: cliente sobre `fetch` com base em `EXPO_PUBLIC_API_URL`. Anexa `Authorization: Bearer` quando houver access token. Ao receber 401 em uma rota autenticada, tenta um refresh uma única vez e repete a requisição; se o refresh falhar, limpa a sessão.
 - Tokens guardados com `expo-secure-store`. Flag de "convidado" também.
