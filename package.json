@@ -2,9 +2,6 @@
   "name": "servidor-estacao-pedro-ii",
   "version": "0.1.0",
   "main": "dist/server.js",
-  "directories": {
-    "doc": "docs"
-  },
   "scripts": {
     "test": "jest --selectProjects unit",
     "dev": "tsx watch src/server.ts",
@@ -20,9 +17,6 @@
     "prisma:seed": "prisma db seed",
     "prisma:studio": "prisma studio"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "description": "API do app Estação Pedro II",
   "private": true,
   "engines": {
