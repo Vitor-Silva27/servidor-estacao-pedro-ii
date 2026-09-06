@@ -53,6 +53,7 @@ docker compose up --build
 | `JWT_ACCESS_EXPIRES` | Validade do access token (`15m`) |
 | `JWT_REFRESH_EXPIRES` | Validade do refresh token (`7d`) |
 | `ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Admin criado pelo seed |
+| `UPLOADS_DIR` | Pasta das fotos, relativa à raiz do projeto (`uploads`) |
 
 ## Níveis de acesso
 
@@ -71,11 +72,35 @@ docker compose up --build
 
 Refresh tokens ficam no Redis com TTL. Não existem no Postgres.
 
+## Atrações
+
+Cachoeiras e pontos turísticos são o mesmo recurso, `Attraction`, com `type` igual a `CACHOEIRA` ou `PONTO_TURISTICO`. Cachoeiras exigem `trailDistance`, `trailTime` e `trailLevel`; pontos turísticos aceitam `openingHours` e `price`. Campos do outro tipo são rejeitados com 400.
+
+Leitura é pública. Escrita exige `ADMIN`.
+
+| Método | Rota | Faz |
+|---|---|---|
+| GET | `/api/v1/attractions?type=` | Lista resumida, ordenada por nome |
+| GET | `/api/v1/attractions/:id` | Detalhe com fotos |
+| POST | `/api/v1/attractions` | Cria |
+| PUT | `/api/v1/attractions/:id` | Atualiza (o tipo não muda) |
+| DELETE | `/api/v1/attractions/:id` | Apaga registro, fotos e arquivos |
+| POST | `/api/v1/attractions/:id/photos` | Upload multipart no campo `file` (JPEG, PNG ou WebP até 5 MB). A primeira foto vira capa |
+| DELETE | `/api/v1/attractions/:id/photos/:photoId` | Remove a foto; se era capa, a próxima assume |
+| PUT | `/api/v1/attractions/:id/cover` | Define a capa com `{ photoId }` |
+
+Fotos ficam em `uploads/attractions/<id>/` e são servidas em `/uploads/...`. As URLs no banco são relativas; o app prefixa com a URL da API. `UPLOADS_DIR` no `.env` muda a pasta (os testes usam `uploads-test`).
+
+Listagem e detalhe ficam em cache no Redis por 60 segundos. Toda escrita invalida.
+
+O seed (`npm run prisma:seed`) cria o admin e as cinco atrações que existiam no app, com fotos. As coordenadas das cachoeiras são aproximadas; corrija pelo app.
+
 ## Estrutura
 
 ```
 prisma/               schema, migrations e seed
 docs/openapi.yaml     documentação da API
+uploads/              fotos enviadas (gitignored; no Docker vem do bind mount)
 docs/superpowers/     specs e planos de design
 src/
   app.ts              composição: middlewares, rotas, swagger, error handler
@@ -87,10 +112,12 @@ src/
     errors/           AppError e subclasses
     middlewares/      errorHandler, validate, authenticate, authorize
     cache/            helper de cache no Redis
+    storage/          interface Storage e implementação em disco
   modules/
     health/
     users/
     auth/
+    attractions/      cachoeiras e pontos turísticos, com fotos
 tests/e2e/            testes de ponta a ponta
 ```
 
@@ -153,8 +180,8 @@ Os e2e usam `.env.test` (portas 5433 e 6380) e limpam o banco e o Redis antes de
 
 ## Roteiro de módulos
 
-1. Fundação (auth, infra, testes) — este estado
-2. Cachoeiras, com upload de imagem e cache
+1. Fundação (auth, infra, testes) — concluído
+2. Atrações: cachoeiras e pontos turísticos, com upload de imagem e cache — concluído
 3. Pontos turísticos
 4. Eventos
 5. Guias, com WhatsApp e Instagram
