@@ -31,9 +31,9 @@ Princípios: YAGNI, DRY, código legível. Sem abstrações que não tenham um s
 ## 3. Stack
 
 - Node 22, TypeScript, Express 5
-- Prisma (Postgres), ioredis (Redis)
+- Prisma 7 (`prisma-client` generator + `@prisma/adapter-pg`, config em `prisma.config.ts`), ioredis (Redis)
 - zod (validação de entrada e de env)
-- jsonwebtoken, bcrypt
+- jsonwebtoken, bcryptjs (mesmo algoritmo do bcrypt, sem módulo nativo)
 - swagger-ui-express + `docs/openapi.yaml`
 - Jest, ts-jest, supertest
 - tsx (dev), Docker + Docker Compose
@@ -166,7 +166,7 @@ Validação de entrada (zod):
 - **Refresh token**: JWT HS256 com `JWT_REFRESH_SECRET`, validade 7 dias. Payload: `sub`, `jti` (UUID aleatório). O `jti` é a chave no Redis.
 - Refresh rotaciona: cada uso apaga o `jti` antigo e emite um novo. Um token vazado só funciona uma vez.
 
-Senhas com bcrypt, custo 10. O objeto `user` retornado nunca inclui `passwordHash`.
+Senhas com bcryptjs, custo 10. O objeto `user` retornado nunca inclui `passwordHash`.
 
 ### Fluxo interno
 
@@ -192,8 +192,8 @@ auth.routes  →  validate(schema)  →  auth.controller  →  AuthService
 ```
 NODE_ENV=development
 PORT=3333
-DATABASE_URL=postgresql://postgres:postgres@postgres:5432/estacao
-REDIS_URL=redis://redis:6379
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/estacao
+REDIS_URL=redis://localhost:6379
 JWT_ACCESS_SECRET=troque-me
 JWT_REFRESH_SECRET=troque-me-tambem
 JWT_ACCESS_EXPIRES=15m
@@ -203,7 +203,7 @@ ADMIN_EMAIL=admin@estacao.local
 ADMIN_PASSWORD=troque-me
 ```
 
-`src/config/env.ts` valida tudo com zod na inicialização e falha rápido se faltar algo.
+`src/config/env.ts` valida tudo com zod na inicialização e falha rápido se faltar algo. Os hosts são `localhost` para comandos rodados na máquina; dentro do Compose, o serviço `api` sobrescreve `DATABASE_URL` e `REDIS_URL` com os nomes dos serviços.
 
 ### Docker Compose
 
