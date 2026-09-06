@@ -6,6 +6,7 @@ const schema = z.object({
   PORT: z.coerce.number().default(3333),
   DATABASE_URL: z.string().min(1),
   REDIS_URL: z.string().min(1),
+  UPLOADS_DIR: z.string().default("uploads"),
   JWT_ACCESS_SECRET: z.string().min(1),
   JWT_REFRESH_SECRET: z.string().min(1),
   JWT_ACCESS_EXPIRES: z.string().default("15m"),

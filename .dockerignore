@@ -5,3 +5,5 @@ src/generated
 .env
 .env.test
 docs/superpowers
+uploads
+uploads-test

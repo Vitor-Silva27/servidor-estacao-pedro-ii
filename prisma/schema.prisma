@@ -23,3 +23,45 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
+
+enum AttractionType {
+  CACHOEIRA
+  PONTO_TURISTICO
+}
+
+enum TrailLevel {
+  FACIL
+  MEDIA
+  DIFICIL
+}
+
+model Attraction {
+  id            String            @id @default(uuid())
+  type          AttractionType
+  name          String
+  description   String
+  latitude      Float
+  longitude     Float
+  tips          String?
+  howToGet      String?
+  trailDistance String?
+  trailTime     String?
+  trailLevel    TrailLevel?
+  openingHours  String?
+  price         String?
+  coverPhotoId  String?           @unique
+  coverPhoto    AttractionPhoto?  @relation("Cover", fields: [coverPhotoId], references: [id], onDelete: SetNull)
+  photos        AttractionPhoto[] @relation("Gallery")
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+}
+
+model AttractionPhoto {
+  id           String      @id @default(uuid())
+  attractionId String
+  attraction   Attraction  @relation("Gallery", fields: [attractionId], references: [id], onDelete: Cascade)
+  coverOf      Attraction? @relation("Cover")
+  url          String
+  position     Int
+  createdAt    DateTime    @default(now())
+}

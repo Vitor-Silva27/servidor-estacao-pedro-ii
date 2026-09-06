@@ -3,3 +3,5 @@ dist/
 src/generated/
 .env
 *.log
+uploads/
+uploads-test/
