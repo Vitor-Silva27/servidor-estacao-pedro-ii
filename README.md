@@ -95,6 +95,23 @@ Listagem e detalhe ficam em cache no Redis por 60 segundos. Toda escrita invalid
 
 O seed (`npm run prisma:seed`) cria o admin e as cinco atrações que existiam no app, com fotos. As coordenadas das cachoeiras são aproximadas; corrija pelo app.
 
+## Eventos
+
+Eventos têm período real (`startsAt` e `endsAt`, ISO 8601), uma nota de data opcional em texto livre (`dateNote`), localização, endereço e fotos com capa, com as mesmas regras de upload das atrações. As fotos ficam em `uploads/events/<id>/`.
+
+| Método | Rota | Faz |
+|---|---|---|
+| GET | `/api/v1/events?scope=upcoming\|all` | Lista ordenada pelo início. `upcoming` (padrão) devolve só eventos com fim igual ou depois de agora |
+| GET | `/api/v1/events/:id` | Detalhe com fotos |
+| POST | `/api/v1/events` | Cria |
+| PUT | `/api/v1/events/:id` | Atualiza |
+| DELETE | `/api/v1/events/:id` | Apaga registro, fotos e arquivos |
+| POST | `/api/v1/events/:id/photos` | Upload no campo `file` |
+| DELETE | `/api/v1/events/:id/photos/:photoId` | Remove a foto |
+| PUT | `/api/v1/events/:id/cover` | Define a capa |
+
+Cache de 60 segundos nas leituras, invalidado em toda escrita. O seed cria o Festival de Inverno com foto.
+
 ## Estrutura
 
 ```
@@ -113,11 +130,13 @@ src/
     middlewares/      errorHandler, validate, authenticate, authorize
     cache/            helper de cache no Redis
     storage/          interface Storage e implementação em disco
+    photos/           regras de galeria com capa, usadas por atrações e eventos
   modules/
     health/
     users/
     auth/
     attractions/      cachoeiras e pontos turísticos, com fotos
+    events/           eventos com período, localização e fotos
 tests/e2e/            testes de ponta a ponta
 ```
 
@@ -182,7 +201,7 @@ Os e2e usam `.env.test` (portas 5433 e 6380) e limpam o banco e o Redis antes de
 
 1. Fundação (auth, infra, testes) — concluído
 2. Atrações: cachoeiras e pontos turísticos, com upload de imagem e cache — concluído
-3. Eventos
+3. Eventos — concluído
 4. Guias, com WhatsApp e Instagram
 5. Hospedagem e restaurantes
 6. Favoritos e salvos do turista

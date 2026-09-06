@@ -4,7 +4,9 @@ import { prisma } from "../../src/lib/prisma";
 import { redis } from "../../src/lib/redis";
 
 beforeAll(async () => {
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "AttractionPhoto", "Attraction", "User" CASCADE');
+  await prisma.$executeRawUnsafe(
+    'TRUNCATE TABLE "EventPhoto", "Event", "AttractionPhoto", "Attraction", "User" CASCADE',
+  );
   await redis.flushdb();
   await rm(UPLOADS_DIR, { recursive: true, force: true });
 });
