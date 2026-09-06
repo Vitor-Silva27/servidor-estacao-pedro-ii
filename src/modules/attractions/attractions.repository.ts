@@ -4,6 +4,7 @@ import type { AttractionType } from "./attractions.schemas";
 const withPhotos = {
   photos: { orderBy: { position: "asc" } },
   coverPhoto: true,
+  guides: { orderBy: { name: "asc" } },
 } satisfies Prisma.AttractionInclude;
 
 export type AttractionRecord = Prisma.AttractionGetPayload<{ include: typeof withPhotos }>;
@@ -27,6 +28,13 @@ export class AttractionsRepository {
 
   findById(id: string): Promise<AttractionRecord | null> {
     return this.db.attraction.findUnique({ where: { id }, include: withPhotos });
+  }
+
+  /** Devolve, dentre os ids informados, os que existem. */
+  async existingIds(ids: string[]): Promise<string[]> {
+    if (ids.length === 0) return [];
+    const rows = await this.db.attraction.findMany({ where: { id: { in: ids } }, select: { id: true } });
+    return rows.map((row) => row.id);
   }
 
   create(data: AttractionWriteData): Promise<AttractionRecord> {

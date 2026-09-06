@@ -27,6 +27,7 @@ function record(overrides: Partial<AttractionRecord> = {}): AttractionRecord {
     coverPhotoId: null,
     coverPhoto: null,
     photos: [],
+    guides: [],
     createdAt: new Date("2026-01-01T00:00:00Z"),
     updatedAt: new Date("2026-01-01T00:00:00Z"),
     ...overrides,

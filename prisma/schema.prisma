@@ -52,6 +52,7 @@ model Attraction {
   coverPhotoId  String?           @unique
   coverPhoto    AttractionPhoto?  @relation("Cover", fields: [coverPhotoId], references: [id], onDelete: SetNull)
   photos        AttractionPhoto[] @relation("Gallery")
+  guides        Guide[]
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 }
@@ -92,4 +93,16 @@ model EventPhoto {
   url       String
   position  Int
   createdAt DateTime @default(now())
+}
+
+model Guide {
+  id          String       @id @default(uuid())
+  name        String
+  description String?
+  whatsapp    String
+  instagram   String?
+  photoUrl    String?
+  attractions Attraction[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 }
