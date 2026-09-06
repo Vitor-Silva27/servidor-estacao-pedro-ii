@@ -9,7 +9,7 @@ import { prisma } from "./lib/prisma";
 import { redis } from "./lib/redis";
 import { createAttractionsRouter } from "./modules/attractions/attractions.routes";
 import { AttractionsRepository } from "./modules/attractions/attractions.repository";
-import { AttractionsService } from "./modules/attractions/attractions.service";
+import { AttractionsService, attractionPhotosDir } from "./modules/attractions/attractions.service";
 import { createAuthRouter } from "./modules/auth/auth.routes";
 import { AuthService } from "./modules/auth/auth.service";
 import { TokenService } from "./modules/auth/token.service";
@@ -44,7 +44,7 @@ export function createApp() {
   const attractionsService = new AttractionsService(
     attractionsRepository,
     cache,
-    createPhotoManager(attractionsRepository, storage, (id) => `attractions/${id}`),
+    createPhotoManager(attractionsRepository, storage, attractionPhotosDir),
   );
 
   app.use("/health", createHealthRouter({ prisma, redis }));

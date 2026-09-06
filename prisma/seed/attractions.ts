@@ -5,7 +5,7 @@ import { prisma } from "../../src/lib/prisma";
 import { redis } from "../../src/lib/redis";
 import { AttractionsRepository } from "../../src/modules/attractions/attractions.repository";
 import type { CreateAttractionInput } from "../../src/modules/attractions/attractions.schemas";
-import { AttractionsService } from "../../src/modules/attractions/attractions.service";
+import { AttractionsService, attractionPhotosDir } from "../../src/modules/attractions/attractions.service";
 import { createCache } from "../../src/shared/cache/cache";
 import { createPhotoManager } from "../../src/shared/photos/photos";
 import { createLocalStorage } from "../../src/shared/storage/localStorage";
@@ -100,7 +100,7 @@ export async function seedAttractions(): Promise<void> {
   const service = new AttractionsService(
     repo,
     createCache(redis),
-    createPhotoManager(repo, createLocalStorage(UPLOADS_DIR), (id) => `attractions/${id}`),
+    createPhotoManager(repo, createLocalStorage(UPLOADS_DIR), attractionPhotosDir),
   );
 
   for (const { photos, ...input } of attractions) {
