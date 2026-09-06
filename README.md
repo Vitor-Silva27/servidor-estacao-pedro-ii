@@ -67,7 +67,7 @@ docker compose up --build
 1. `POST /api/v1/auth/login` ou `/register` devolve `accessToken` (15 min) e `refreshToken` (7 dias).
 2. Envie `Authorization: Bearer <accessToken>` nas rotas protegidas.
 3. Quando o access expirar, `POST /api/v1/auth/refresh` com o `refreshToken` devolve um par novo. O refresh usado é invalidado (rotação).
-4. `POST /api/v1/auth/logout` revoga o refresh token.
+4. `POST /api/v1/auth/logout`, com `Authorization: Bearer` e o `refreshToken` no body, revoga o refresh token.
 
 Refresh tokens ficam no Redis com TTL. Não existem no Postgres.
 
@@ -76,10 +76,12 @@ Refresh tokens ficam no Redis com TTL. Não existem no Postgres.
 ```
 prisma/               schema, migrations e seed
 docs/openapi.yaml     documentação da API
+docs/superpowers/     specs e planos de design
 src/
   app.ts              composição: middlewares, rotas, swagger, error handler
   server.ts           sobe a porta
   config/env.ts       variáveis de ambiente validadas
+  types/express.d.ts  adiciona req.user ao tipo do Express
   lib/                clientes Prisma e Redis
   shared/
     errors/           AppError e subclasses
@@ -94,7 +96,7 @@ tests/e2e/            testes de ponta a ponta
 
 ## Padrão de módulo
 
-Cada módulo é uma pasta em `src/modules/<nome>` com:
+Módulos com rotas próprias (como `auth`) são uma pasta em `src/modules/<nome>` com:
 
 | Arquivo | Papel |
 |---|---|
@@ -109,7 +111,7 @@ Para criar um módulo novo:
 
 1. Adicione o model em `prisma/schema.prisma` e rode `npx prisma migrate dev --name <nome>` e `npx prisma generate`.
 2. Crie a pasta com os arquivos acima. Comece pelo teste do service.
-3. Exponha uma função `create<Nome>Router(deps)` e monte em `src/app.ts` sob `/api/v1/<nome>`.
+3. Exponha uma função `create<Nome>Router(...)` que recebe suas dependências como argumentos e monte em `src/app.ts` sob `/api/v1/<nome>`.
 4. Rotas de leitura não usam `authenticate`. Rotas de escrita usam `authenticate(tokens)` seguido de `authorize("ADMIN")`.
 5. Documente os paths em `docs/openapi.yaml`.
 6. Adicione um `tests/e2e/<nome>.e2e.test.ts`.
