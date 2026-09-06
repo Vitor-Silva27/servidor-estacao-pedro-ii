@@ -192,7 +192,7 @@ auth.routes  →  validate(schema)  →  auth.controller  →  AuthService
 ```
 NODE_ENV=development
 PORT=3333
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/estacao
+DATABASE_URL=postgresql://postgres:postgres@localhost:5434/estacao
 REDIS_URL=redis://localhost:6379
 JWT_ACCESS_SECRET=troque-me
 JWT_REFRESH_SECRET=troque-me-tambem
@@ -210,7 +210,7 @@ ADMIN_PASSWORD=troque-me
 Perfil padrão:
 
 - `api`: build do `Dockerfile`, volume de `src` para hot reload com `tsx watch`, roda `prisma migrate deploy` antes de subir. Porta 3333.
-- `postgres`: imagem `postgres:16-alpine`, volume nomeado, porta 5432.
+- `postgres`: imagem `postgres:16-alpine`, volume nomeado, porta 5434 no host (5432 costuma estar ocupada por um Postgres nativo do Windows na máquina de desenvolvimento).
 - `redis`: imagem `redis:7-alpine`, volume nomeado, porta 6379.
 
 Perfil `test`:

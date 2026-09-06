@@ -175,7 +175,7 @@ Os hosts são `localhost` porque este arquivo serve para comandos rodados na má
 ```
 NODE_ENV=development
 PORT=3333
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/estacao
+DATABASE_URL=postgresql://postgres:postgres@localhost:5434/estacao
 REDIS_URL=redis://localhost:6379
 JWT_ACCESS_SECRET=troque-me-por-um-segredo-longo
 JWT_REFRESH_SECRET=troque-me-por-outro-segredo-longo
@@ -253,7 +253,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: estacao
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
