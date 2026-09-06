@@ -2,6 +2,8 @@ import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { errorHandler } from "./errorHandler";
 import { NotFoundError } from "../errors/AppError";
+import multer from "multer";
+import { ValidationError } from "../errors/AppError";
 
 function mockRes() {
   const res = {} as Response;
@@ -47,6 +49,32 @@ describe("errorHandler", () => {
     expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith({
       error: { code: "INTERNAL_ERROR", message: "Erro interno do servidor" },
+    });
+  });
+
+  it("inclui details quando o AppError é ValidationError", () => {
+    const res = mockRes();
+    errorHandler(new ValidationError([{ path: "file", message: "Arquivo obrigatório" }]), req, res, next);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Dados inválidos",
+        details: [{ path: "file", message: "Arquivo obrigatório" }],
+      },
+    });
+  });
+
+  it("mapeia MulterError de tamanho para 400 no campo file", () => {
+    const res = mockRes();
+    errorHandler(new multer.MulterError("LIMIT_FILE_SIZE", "file"), req, res, next);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Dados inválidos",
+        details: [{ path: "file", message: "Arquivo excede o tamanho máximo de 5 MB" }],
+      },
     });
   });
 });

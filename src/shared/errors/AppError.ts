@@ -32,3 +32,14 @@ export class ConflictError extends AppError {
     super(409, "CONFLICT", message);
   }
 }
+
+export type ValidationDetail = { path: string; message: string };
+
+export class ValidationError extends AppError {
+  constructor(
+    public readonly details: ValidationDetail[],
+    message = "Dados inválidos",
+  ) {
+    super(400, "VALIDATION_ERROR", message);
+  }
+}
