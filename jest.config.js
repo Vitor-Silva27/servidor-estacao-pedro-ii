@@ -2,7 +2,7 @@
 const shared = {
   preset: "ts-jest",
   testEnvironment: "node",
-  moduleNameMapper: { "^(\.{1,2}/.*)\.js$": "$1" },
+  moduleNameMapper: { "^(\\.{1,2}/.*)\\.js$": "$1" },
 };
 
 module.exports = {
