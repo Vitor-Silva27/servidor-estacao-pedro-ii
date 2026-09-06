@@ -112,6 +112,25 @@ Eventos têm período real (`startsAt` e `endsAt`, ISO 8601), uma nota de data o
 
 Cache de 60 segundos nas leituras, invalidado em toda escrita. O seed cria o Festival de Inverno com foto.
 
+## Guias
+
+Guias locais têm nome, descrição, WhatsApp, Instagram, uma foto e a lista de atrações em que atuam. A ligação é gerida pelo guia, via `attractionIds`, e o detalhe da atração (`GET /api/v1/attractions/:id`) devolve `guides[]` prontos para o app.
+
+| Método | Rota | Faz |
+|---|---|---|
+| GET | `/api/v1/guides` | Lista ordenada por nome, com `attractionIds` |
+| GET | `/api/v1/guides/:id` | Detalhe |
+| POST | `/api/v1/guides` | Cria com ligações |
+| PUT | `/api/v1/guides/:id` | Atualiza e substitui as ligações |
+| DELETE | `/api/v1/guides/:id` | Apaga guia, ligações e foto |
+| POST | `/api/v1/guides/:id/photo` | Substitui a foto (campo `file`) |
+
+`whatsapp` aceita qualquer máscara e é guardado só com dígitos, com DDI (12 ou 13 dígitos). `instagram` é guardado sem `@`. Um `attractionIds` com id inexistente responde 400 no campo `attractionIds`.
+
+Cache: `guides:list` e `guides:<id>` por 60 segundos. Escritas em guia invalidam também o detalhe das atrações ligadas.
+
+O seed cria o guia João Lucas ligado a todas as atrações, com um WhatsApp fictício (`5586999990000`) que deve ser corrigido pelo app.
+
 ## Estrutura
 
 ```
@@ -137,6 +156,7 @@ src/
     auth/
     attractions/      cachoeiras e pontos turísticos, com fotos
     events/           eventos com período, localização e fotos
+    guides/           guias locais ligados às atrações, com WhatsApp e Instagram
 tests/e2e/            testes de ponta a ponta
 ```
 
@@ -202,7 +222,7 @@ Os e2e usam `.env.test` (portas 5433 e 6380) e limpam o banco e o Redis antes de
 1. Fundação (auth, infra, testes) — concluído
 2. Atrações: cachoeiras e pontos turísticos, com upload de imagem e cache — concluído
 3. Eventos — concluído
-4. Guias, com WhatsApp e Instagram
+4. Guias, com WhatsApp e Instagram — concluído
 5. Hospedagem e restaurantes
 6. Favoritos e salvos do turista
 

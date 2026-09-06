@@ -15,6 +15,9 @@ import { AuthService } from "./modules/auth/auth.service";
 import { createEventsRouter } from "./modules/events/events.routes";
 import { EventsRepository } from "./modules/events/events.repository";
 import { EventsService, eventPhotosDir } from "./modules/events/events.service";
+import { createGuidesRouter } from "./modules/guides/guides.routes";
+import { GuidesRepository } from "./modules/guides/guides.repository";
+import { GuidesService } from "./modules/guides/guides.service";
 import { TokenService } from "./modules/auth/token.service";
 import { createHealthRouter } from "./modules/health/health.routes";
 import { UsersRepository } from "./modules/users/users.repository";
@@ -55,11 +58,13 @@ export function createApp() {
     cache,
     createPhotoManager(eventsRepository, storage, eventPhotosDir),
   );
+  const guidesService = new GuidesService(new GuidesRepository(prisma), attractionsRepository, cache, storage);
 
   app.use("/health", createHealthRouter({ prisma, redis }));
   app.use("/api/v1/auth", createAuthRouter(authService, tokens));
   app.use("/api/v1/attractions", createAttractionsRouter(attractionsService, tokens));
   app.use("/api/v1/events", createEventsRouter(eventsService, tokens));
+  app.use("/api/v1/guides", createGuidesRouter(guidesService, tokens));
   app.use("/uploads", express.static(UPLOADS_DIR));
   app.use("/docs", swaggerUi.serve, swaggerUi.setup(loadOpenApi()));
 

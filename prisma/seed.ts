@@ -3,11 +3,13 @@ import { redis } from "../src/lib/redis";
 import { seedAdmin } from "./seed/admin";
 import { seedAttractions } from "./seed/attractions";
 import { seedEvents } from "./seed/events";
+import { seedGuides } from "./seed/guides";
 
 async function main() {
   await seedAdmin();
   await seedAttractions();
   await seedEvents();
+  await seedGuides();
 }
 
 main()

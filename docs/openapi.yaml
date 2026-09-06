@@ -18,6 +18,7 @@ tags:
   - name: Auth
   - name: Attractions
   - name: Events
+  - name: Guides
 
 paths:
   /health:
@@ -514,6 +515,129 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /api/v1/guides:
+    get:
+      tags: [Guides]
+      summary: Lista guias locais
+      responses:
+        "200":
+          description: Lista ordenada por nome
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Guide" }
+    post:
+      tags: [Guides]
+      summary: Cria um guia (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GuideInput" }
+      responses:
+        "201":
+          description: Criado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Guide" }
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/guides/{id}:
+    parameters:
+      - $ref: "#/components/parameters/GuideId"
+    get:
+      tags: [Guides]
+      summary: Detalhe de um guia
+      responses:
+        "200":
+          description: Guia
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Guide" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Guides]
+      summary: Atualiza um guia e substitui suas atrações (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GuideInput" }
+      responses:
+        "200":
+          description: Atualizado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Guide" }
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Guides]
+      summary: Apaga o guia, suas ligações e a foto (admin)
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Apagado
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/guides/{id}/photo:
+    parameters:
+      - $ref: "#/components/parameters/GuideId"
+    post:
+      tags: [Guides]
+      summary: Substitui a foto do guia (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: JPEG, PNG ou WebP até 5 MB
+      responses:
+        "200":
+          description: Foto substituída
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Guide" }
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -528,6 +652,11 @@ components:
       required: true
       schema: { type: string, format: uuid }
     EventId:
+      in: path
+      name: id
+      required: true
+      schema: { type: string, format: uuid }
+    GuideId:
       in: path
       name: id
       required: true
@@ -661,6 +790,9 @@ components:
             photos:
               type: array
               items: { $ref: "#/components/schemas/AttractionPhoto" }
+            guides:
+              type: array
+              items: { $ref: "#/components/schemas/GuideSummary" }
             createdAt: { type: string, format: date-time }
             updatedAt: { type: string, format: date-time }
 
@@ -754,3 +886,35 @@ components:
         longitude: { type: number, minimum: -180, maximum: 180 }
         address: { type: string }
         tips: { type: string }
+
+    GuideSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        whatsapp: { type: string, example: "5586999990000", description: Só dígitos, com DDI }
+        instagram: { type: string, nullable: true, example: joaolucas.guia, description: Sem @ }
+        photoUrl: { type: string, nullable: true }
+
+    Guide:
+      allOf:
+        - $ref: "#/components/schemas/GuideSummary"
+        - type: object
+          properties:
+            attractionIds:
+              type: array
+              items: { type: string, format: uuid }
+
+    GuideInput:
+      type: object
+      required: [name, whatsapp, attractionIds]
+      properties:
+        name: { type: string, minLength: 2, maxLength: 120 }
+        description: { type: string }
+        whatsapp: { type: string, example: "+55 (86) 99999-0000", description: Qualquer máscara; guardado só com dígitos, 12 ou 13 }
+        instagram: { type: string, example: "@joaolucas.guia", description: "@ e espaços são removidos" }
+        attractionIds:
+          type: array
+          items: { type: string, format: uuid }
+          description: Atrações em que o guia atua. Substitui a lista anterior no PUT
