@@ -1,6 +1,7 @@
 import type { Cache } from "../../shared/cache/cache";
 import { NotFoundError } from "../../shared/errors/AppError";
 import type { PhotoInput, PhotoManager, PhotoRow } from "../../shared/photos/photos";
+import { toGuideSummary, type GuideSummary } from "../guides/guides.types";
 import type { AttractionRecord, AttractionsRepository } from "./attractions.repository";
 import {
   fieldsSchemaFor,
@@ -31,6 +32,7 @@ export type AttractionDetail = AttractionSummary & {
   openingHours: string | null;
   price: string | null;
   photos: PhotoOutput[];
+  guides: GuideSummary[];
   createdAt: string;
   updatedAt: string;
 };
@@ -69,6 +71,7 @@ function toDetail(row: AttractionRecord): AttractionDetail {
     openingHours: row.openingHours,
     price: row.price,
     photos: row.photos.map(toPhoto),
+    guides: row.guides.map(toGuideSummary),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };

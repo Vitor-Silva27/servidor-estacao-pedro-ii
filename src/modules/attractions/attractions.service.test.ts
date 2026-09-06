@@ -127,6 +127,33 @@ describe("AttractionsService.getById", () => {
     repo.findById.mockResolvedValue(null);
     await expect(service.getById("nada")).rejects.toThrow(NotFoundError);
   });
+
+  it("inclui os guias no formato público", async () => {
+    const { repo, cache, service } = setup();
+    cache.get.mockResolvedValue(null);
+    repo.findById.mockResolvedValue(
+      record({
+        guides: [
+          {
+            id: "g1",
+            name: "João Lucas",
+            description: "Trilhas",
+            whatsapp: "5586999990000",
+            instagram: null,
+            photoUrl: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ],
+      }),
+    );
+
+    const result = await service.getById("a1");
+
+    expect(result.guides).toEqual([
+      { id: "g1", name: "João Lucas", description: "Trilhas", whatsapp: "5586999990000", instagram: null, photoUrl: null },
+    ]);
+  });
 });
 
 describe("AttractionsService.create", () => {
