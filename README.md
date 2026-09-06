@@ -100,8 +100,8 @@ O seed (`npm run prisma:seed`) cria o admin e as cinco atrações que existiam n
 ```
 prisma/               schema, migrations e seed
 docs/openapi.yaml     documentação da API
-uploads/              fotos enviadas (gitignored; no Docker vem do bind mount)
 docs/superpowers/     specs e planos de design
+uploads/              fotos enviadas (gitignored; no Docker vem do bind mount)
 src/
   app.ts              composição: middlewares, rotas, swagger, error handler
   server.ts           sobe a porta
@@ -182,10 +182,9 @@ Os e2e usam `.env.test` (portas 5433 e 6380) e limpam o banco e o Redis antes de
 
 1. Fundação (auth, infra, testes) — concluído
 2. Atrações: cachoeiras e pontos turísticos, com upload de imagem e cache — concluído
-3. Pontos turísticos
-4. Eventos
-5. Guias, com WhatsApp e Instagram
-6. Hospedagem e restaurantes
-7. Favoritos e salvos do turista
+3. Eventos
+4. Guias, com WhatsApp e Instagram
+5. Hospedagem e restaurantes
+6. Favoritos e salvos do turista
 
 Os specs de design ficam em `docs/superpowers/specs`.
