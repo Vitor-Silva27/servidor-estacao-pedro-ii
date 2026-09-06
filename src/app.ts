@@ -12,6 +12,9 @@ import { AttractionsRepository } from "./modules/attractions/attractions.reposit
 import { AttractionsService, attractionPhotosDir } from "./modules/attractions/attractions.service";
 import { createAuthRouter } from "./modules/auth/auth.routes";
 import { AuthService } from "./modules/auth/auth.service";
+import { createEventsRouter } from "./modules/events/events.routes";
+import { EventsRepository } from "./modules/events/events.repository";
+import { EventsService, eventPhotosDir } from "./modules/events/events.service";
 import { TokenService } from "./modules/auth/token.service";
 import { createHealthRouter } from "./modules/health/health.routes";
 import { UsersRepository } from "./modules/users/users.repository";
@@ -46,10 +49,17 @@ export function createApp() {
     cache,
     createPhotoManager(attractionsRepository, storage, attractionPhotosDir),
   );
+  const eventsRepository = new EventsRepository(prisma);
+  const eventsService = new EventsService(
+    eventsRepository,
+    cache,
+    createPhotoManager(eventsRepository, storage, eventPhotosDir),
+  );
 
   app.use("/health", createHealthRouter({ prisma, redis }));
   app.use("/api/v1/auth", createAuthRouter(authService, tokens));
   app.use("/api/v1/attractions", createAttractionsRouter(attractionsService, tokens));
+  app.use("/api/v1/events", createEventsRouter(eventsService, tokens));
   app.use("/uploads", express.static(UPLOADS_DIR));
   app.use("/docs", swaggerUi.serve, swaggerUi.setup(loadOpenApi()));
 

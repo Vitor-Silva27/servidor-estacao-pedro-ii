@@ -17,6 +17,7 @@ tags:
   - name: Health
   - name: Auth
   - name: Attractions
+  - name: Events
 
 paths:
   /health:
@@ -331,6 +332,188 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /api/v1/events:
+    get:
+      tags: [Events]
+      summary: Lista eventos
+      parameters:
+        - in: query
+          name: scope
+          schema: { type: string, enum: [upcoming, all], default: upcoming }
+          description: upcoming devolve só eventos com fim igual ou depois de agora
+      responses:
+        "200":
+          description: Lista ordenada pelo início
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/EventSummary" }
+    post:
+      tags: [Events]
+      summary: Cria um evento (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EventInput" }
+      responses:
+        "201":
+          description: Criado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Event" }
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/events/{id}:
+    parameters:
+      - $ref: "#/components/parameters/EventId"
+    get:
+      tags: [Events]
+      summary: Detalhe de um evento
+      responses:
+        "200":
+          description: Evento com fotos
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Event" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Events]
+      summary: Atualiza um evento (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EventInput" }
+      responses:
+        "200":
+          description: Atualizado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Event" }
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Events]
+      summary: Apaga o evento, suas fotos e arquivos (admin)
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Apagado
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/events/{id}/photos:
+    parameters:
+      - $ref: "#/components/parameters/EventId"
+    post:
+      tags: [Events]
+      summary: Envia uma foto (admin). A primeira vira capa.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: JPEG, PNG ou WebP até 5 MB
+      responses:
+        "201":
+          description: Foto criada
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AttractionPhoto" }
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/events/{id}/photos/{photoId}:
+    parameters:
+      - $ref: "#/components/parameters/EventId"
+      - in: path
+        name: photoId
+        required: true
+        schema: { type: string, format: uuid }
+    delete:
+      tags: [Events]
+      summary: Remove uma foto (admin). Se era a capa, a próxima assume.
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Removida
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/events/{id}/cover:
+    parameters:
+      - $ref: "#/components/parameters/EventId"
+    put:
+      tags: [Events]
+      summary: Define a foto de capa (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [photoId]
+              properties:
+                photoId: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Capa definida
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Event" }
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -340,6 +523,11 @@ components:
 
   parameters:
     AttractionId:
+      in: path
+      name: id
+      required: true
+      schema: { type: string, format: uuid }
+    EventId:
       in: path
       name: id
       required: true
@@ -526,3 +714,43 @@ components:
               properties:
                 type: { type: string, enum: [PONTO_TURISTICO] }
             - $ref: "#/components/schemas/PlaceFields"
+
+    EventSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        coverUrl: { type: string, nullable: true }
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+        dateNote: { type: string, nullable: true, example: Acontece todo ano entre junho e julho }
+        address: { type: string, nullable: true }
+
+    Event:
+      allOf:
+        - $ref: "#/components/schemas/EventSummary"
+        - type: object
+          properties:
+            description: { type: string }
+            latitude: { type: number }
+            longitude: { type: number }
+            tips: { type: string, nullable: true }
+            photos:
+              type: array
+              items: { $ref: "#/components/schemas/AttractionPhoto" }
+            createdAt: { type: string, format: date-time }
+            updatedAt: { type: string, format: date-time }
+
+    EventInput:
+      type: object
+      required: [name, description, startsAt, endsAt, latitude, longitude]
+      properties:
+        name: { type: string, minLength: 2, maxLength: 120 }
+        description: { type: string, minLength: 10 }
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time, description: Igual ou depois de startsAt }
+        dateNote: { type: string }
+        latitude: { type: number, minimum: -90, maximum: 90 }
+        longitude: { type: number, minimum: -180, maximum: 180 }
+        address: { type: string }
+        tips: { type: string }
