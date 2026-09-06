@@ -16,6 +16,7 @@ servers:
 tags:
   - name: Health
   - name: Auth
+  - name: Attractions
 
 paths:
   /health:
@@ -149,12 +150,200 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /api/v1/attractions:
+    get:
+      tags: [Attractions]
+      summary: Lista atrações
+      parameters:
+        - in: query
+          name: type
+          schema: { $ref: "#/components/schemas/AttractionType" }
+      responses:
+        "200":
+          description: Lista ordenada por nome
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AttractionSummary" }
+    post:
+      tags: [Attractions]
+      summary: Cria uma atração (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AttractionInput" }
+      responses:
+        "201":
+          description: Criada
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Attraction" }
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/attractions/{id}:
+    parameters:
+      - $ref: "#/components/parameters/AttractionId"
+    get:
+      tags: [Attractions]
+      summary: Detalhe de uma atração
+      responses:
+        "200":
+          description: Atração com fotos
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Attraction" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Attractions]
+      summary: Atualiza uma atração (admin). O tipo não muda.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AttractionFields" }
+      responses:
+        "200":
+          description: Atualizada
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Attraction" }
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Attractions]
+      summary: Apaga a atração, suas fotos e arquivos (admin)
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Apagada
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/attractions/{id}/photos:
+    parameters:
+      - $ref: "#/components/parameters/AttractionId"
+    post:
+      tags: [Attractions]
+      summary: Envia uma foto (admin). A primeira vira capa.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: JPEG, PNG ou WebP até 5 MB
+      responses:
+        "201":
+          description: Foto criada
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AttractionPhoto" }
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/attractions/{id}/photos/{photoId}:
+    parameters:
+      - $ref: "#/components/parameters/AttractionId"
+      - in: path
+        name: photoId
+        required: true
+        schema: { type: string, format: uuid }
+    delete:
+      tags: [Attractions]
+      summary: Remove uma foto (admin). Se era a capa, a próxima assume.
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Removida
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/attractions/{id}/cover:
+    parameters:
+      - $ref: "#/components/parameters/AttractionId"
+    put:
+      tags: [Attractions]
+      summary: Define a foto de capa (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [photoId]
+              properties:
+                photoId: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Capa definida
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Attraction" }
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+
+  parameters:
+    AttractionId:
+      in: path
+      name: id
+      required: true
+      schema: { type: string, format: uuid }
 
   responses:
     ValidationError:
@@ -165,6 +354,18 @@ components:
             $ref: "#/components/schemas/Error"
     Unauthorized:
       description: Token ausente, inválido ou credenciais erradas
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: Usuário sem permissão (exige ADMIN)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Recurso não encontrado
       content:
         application/json:
           schema:
@@ -230,3 +431,98 @@ components:
       required: [refreshToken]
       properties:
         refreshToken: { type: string }
+
+    AttractionType:
+      type: string
+      enum: [CACHOEIRA, PONTO_TURISTICO]
+
+    TrailLevel:
+      type: string
+      enum: [FACIL, MEDIA, DIFICIL]
+
+    AttractionPhoto:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        url: { type: string, example: /uploads/attractions/uuid/uuid.jpg, description: Relativa à raiz da API }
+        position: { type: integer }
+
+    AttractionSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        type: { $ref: "#/components/schemas/AttractionType" }
+        name: { type: string }
+        coverUrl: { type: string, nullable: true }
+        trailDistance: { type: string, nullable: true }
+        trailTime: { type: string, nullable: true }
+        trailLevel: { $ref: "#/components/schemas/TrailLevel", nullable: true }
+
+    Attraction:
+      allOf:
+        - $ref: "#/components/schemas/AttractionSummary"
+        - type: object
+          properties:
+            description: { type: string }
+            latitude: { type: number }
+            longitude: { type: number }
+            tips: { type: string, nullable: true }
+            howToGet: { type: string, nullable: true }
+            openingHours: { type: string, nullable: true }
+            price: { type: string, nullable: true }
+            photos:
+              type: array
+              items: { $ref: "#/components/schemas/AttractionPhoto" }
+            createdAt: { type: string, format: date-time }
+            updatedAt: { type: string, format: date-time }
+
+    AttractionBaseFields:
+      type: object
+      required: [name, description, latitude, longitude]
+      properties:
+        name: { type: string, minLength: 2, maxLength: 120 }
+        description: { type: string, minLength: 10 }
+        latitude: { type: number, minimum: -90, maximum: 90 }
+        longitude: { type: number, minimum: -180, maximum: 180 }
+        tips: { type: string }
+        howToGet: { type: string }
+
+    WaterfallFields:
+      allOf:
+        - $ref: "#/components/schemas/AttractionBaseFields"
+        - type: object
+          required: [trailDistance, trailTime, trailLevel]
+          properties:
+            trailDistance: { type: string, example: "2,3km" }
+            trailTime: { type: string, example: 45min }
+            trailLevel: { $ref: "#/components/schemas/TrailLevel" }
+
+    PlaceFields:
+      allOf:
+        - $ref: "#/components/schemas/AttractionBaseFields"
+        - type: object
+          properties:
+            openingHours: { type: string, example: 08:00 às 17:00 }
+            price: { type: string, example: Entrada gratuita }
+
+    AttractionFields:
+      description: Campos editáveis. Cachoeiras exigem os campos de trilha; pontos turísticos aceitam horário e preço. Campos do outro tipo são rejeitados.
+      oneOf:
+        - $ref: "#/components/schemas/WaterfallFields"
+        - $ref: "#/components/schemas/PlaceFields"
+
+    AttractionInput:
+      description: Corpo de criação. O campo type escolhe o conjunto de campos.
+      oneOf:
+        - allOf:
+            - type: object
+              required: [type]
+              properties:
+                type: { type: string, enum: [CACHOEIRA] }
+            - $ref: "#/components/schemas/WaterfallFields"
+        - allOf:
+            - type: object
+              required: [type]
+              properties:
+                type: { type: string, enum: [PONTO_TURISTICO] }
+            - $ref: "#/components/schemas/PlaceFields"
