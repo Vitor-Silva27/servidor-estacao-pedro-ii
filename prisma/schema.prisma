@@ -65,3 +65,31 @@ model AttractionPhoto {
   position     Int
   createdAt    DateTime    @default(now())
 }
+
+model Event {
+  id           String       @id @default(uuid())
+  name         String
+  description  String
+  startsAt     DateTime
+  endsAt       DateTime
+  dateNote     String?
+  latitude     Float
+  longitude    Float
+  address      String?
+  tips         String?
+  coverPhotoId String?      @unique
+  coverPhoto   EventPhoto?  @relation("EventCover", fields: [coverPhotoId], references: [id], onDelete: SetNull)
+  photos       EventPhoto[] @relation("EventGallery")
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+model EventPhoto {
+  id        String   @id @default(uuid())
+  eventId   String
+  event     Event    @relation("EventGallery", fields: [eventId], references: [id], onDelete: Cascade)
+  coverOf   Event?   @relation("EventCover")
+  url       String
+  position  Int
+  createdAt DateTime @default(now())
+}
