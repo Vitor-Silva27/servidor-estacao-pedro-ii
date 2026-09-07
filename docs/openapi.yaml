@@ -19,6 +19,7 @@ tags:
   - name: Attractions
   - name: Events
   - name: Guides
+  - name: Establishments
 
 paths:
   /health:
@@ -638,6 +639,187 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /api/v1/establishments:
+    get:
+      tags: [Establishments]
+      summary: Lista hospedagens e restaurantes
+      parameters:
+        - in: query
+          name: type
+          schema: { $ref: "#/components/schemas/EstablishmentType" }
+      responses:
+        "200":
+          description: Lista ordenada por nome
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/EstablishmentSummary" }
+    post:
+      tags: [Establishments]
+      summary: Cria um estabelecimento (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EstablishmentInput" }
+      responses:
+        "201":
+          description: Criado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Establishment" }
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/establishments/{id}:
+    parameters:
+      - $ref: "#/components/parameters/EstablishmentId"
+    get:
+      tags: [Establishments]
+      summary: Detalhe de um estabelecimento
+      responses:
+        "200":
+          description: Estabelecimento com fotos
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Establishment" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Establishments]
+      summary: Atualiza um estabelecimento (admin). O tipo não muda.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EstablishmentFields" }
+      responses:
+        "200":
+          description: Atualizado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Establishment" }
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Establishments]
+      summary: Apaga o estabelecimento, suas fotos e arquivos (admin)
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Apagado
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/establishments/{id}/photos:
+    parameters:
+      - $ref: "#/components/parameters/EstablishmentId"
+    post:
+      tags: [Establishments]
+      summary: Envia uma foto (admin). A primeira vira capa.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: JPEG, PNG ou WebP até 5 MB
+      responses:
+        "201":
+          description: Foto criada
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AttractionPhoto" }
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/establishments/{id}/photos/{photoId}:
+    parameters:
+      - $ref: "#/components/parameters/EstablishmentId"
+      - in: path
+        name: photoId
+        required: true
+        schema: { type: string, format: uuid }
+    delete:
+      tags: [Establishments]
+      summary: Remove uma foto (admin). Se era a capa, a próxima assume.
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Removida
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/establishments/{id}/cover:
+    parameters:
+      - $ref: "#/components/parameters/EstablishmentId"
+    put:
+      tags: [Establishments]
+      summary: Define a foto de capa (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [photoId]
+              properties:
+                photoId: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Capa definida
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Establishment" }
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -657,6 +839,11 @@ components:
       required: true
       schema: { type: string, format: uuid }
     GuideId:
+      in: path
+      name: id
+      required: true
+      schema: { type: string, format: uuid }
+    EstablishmentId:
       in: path
       name: id
       required: true
@@ -918,3 +1105,63 @@ components:
           type: array
           items: { type: string, format: uuid }
           description: Atrações em que o guia atua. Substitui a lista anterior no PUT
+
+    EstablishmentType:
+      type: string
+      enum: [HOSPEDAGEM, RESTAURANTE]
+
+    PriceRange:
+      type: string
+      enum: [BAIXO, MEDIO, ALTO]
+      description: Mostrado no app como $, $$ e $$$
+
+    EstablishmentSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        type: { $ref: "#/components/schemas/EstablishmentType" }
+        name: { type: string }
+        coverUrl: { type: string, nullable: true }
+        priceRange: { $ref: "#/components/schemas/PriceRange" }
+        address: { type: string }
+
+    Establishment:
+      allOf:
+        - $ref: "#/components/schemas/EstablishmentSummary"
+        - type: object
+          properties:
+            description: { type: string }
+            latitude: { type: number }
+            longitude: { type: number }
+            whatsapp: { type: string, example: "5586999990000", description: Só dígitos, com DDI }
+            instagram: { type: string, nullable: true, description: Sem @ }
+            openingHours: { type: string, nullable: true, example: Seg a Sáb, 11h às 22h }
+            highlights: { type: string, nullable: true, example: Cozinha regional, música ao vivo }
+            photos:
+              type: array
+              items: { $ref: "#/components/schemas/AttractionPhoto" }
+            createdAt: { type: string, format: date-time }
+            updatedAt: { type: string, format: date-time }
+
+    EstablishmentFields:
+      type: object
+      required: [name, description, latitude, longitude, address, whatsapp, priceRange]
+      properties:
+        name: { type: string, minLength: 2, maxLength: 120 }
+        description: { type: string, minLength: 10 }
+        latitude: { type: number, minimum: -90, maximum: 90 }
+        longitude: { type: number, minimum: -180, maximum: 180 }
+        address: { type: string, minLength: 3 }
+        whatsapp: { type: string, example: "+55 (86) 99999-0000", description: Qualquer máscara; guardado só com dígitos }
+        instagram: { type: string, example: "@pousada.serra" }
+        openingHours: { type: string }
+        priceRange: { $ref: "#/components/schemas/PriceRange" }
+        highlights: { type: string }
+
+    EstablishmentInput:
+      allOf:
+        - type: object
+          required: [type]
+          properties:
+            type: { $ref: "#/components/schemas/EstablishmentType" }
+        - $ref: "#/components/schemas/EstablishmentFields"

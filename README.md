@@ -131,6 +131,23 @@ Cache: `guides:list` e `guides:<id>` por 60 segundos. Escritas em guia invalidam
 
 O seed cria o guia João Lucas ligado a todas as atrações, com um WhatsApp fictício (`5586999990000`) que deve ser corrigido pelo app.
 
+## Estabelecimentos
+
+Hospedagens e restaurantes são o mesmo recurso, `Establishment`, com `type` igual a `HOSPEDAGEM` ou `RESTAURANTE` e os mesmos campos: nome, descrição, localização, endereço, WhatsApp, Instagram, horário, faixa de preço (`BAIXO`, `MEDIO`, `ALTO`, mostrada como $, $$ e $$$) e destaques em texto livre. Fotos com capa como nas atrações, em `uploads/establishments/<id>/`.
+
+| Método | Rota | Faz |
+|---|---|---|
+| GET | `/api/v1/establishments?type=` | Lista resumida, ordenada por nome |
+| GET | `/api/v1/establishments/:id` | Detalhe com fotos |
+| POST | `/api/v1/establishments` | Cria |
+| PUT | `/api/v1/establishments/:id` | Atualiza (o tipo não muda) |
+| DELETE | `/api/v1/establishments/:id` | Apaga registro, fotos e arquivos |
+| POST | `/api/v1/establishments/:id/photos` | Upload no campo `file` |
+| DELETE | `/api/v1/establishments/:id/photos/:photoId` | Remove a foto |
+| PUT | `/api/v1/establishments/:id/cover` | Define a capa |
+
+WhatsApp e Instagram seguem as mesmas regras dos guias. Cache de 60 segundos nas leituras, invalidado em toda escrita. Não há seed: o admin cadastra pelo app.
+
 ## Estrutura
 
 ```
@@ -150,6 +167,7 @@ src/
     cache/            helper de cache no Redis
     storage/          interface Storage e implementação em disco
     photos/           regras de galeria com capa, usadas por atrações e eventos
+    contacts.ts       normalização de WhatsApp e Instagram, usada por guias e estabelecimentos
   modules/
     health/
     users/
@@ -157,6 +175,7 @@ src/
     attractions/      cachoeiras e pontos turísticos, com fotos
     events/           eventos com período, localização e fotos
     guides/           guias locais ligados às atrações, com WhatsApp e Instagram
+    establishments/   hospedagens e restaurantes, com contato, preço e fotos
 tests/e2e/            testes de ponta a ponta
 ```
 
@@ -223,7 +242,7 @@ Os e2e usam `.env.test` (portas 5433 e 6380) e limpam o banco e o Redis antes de
 2. Atrações: cachoeiras e pontos turísticos, com upload de imagem e cache — concluído
 3. Eventos — concluído
 4. Guias, com WhatsApp e Instagram — concluído
-5. Hospedagem e restaurantes
+5. Hospedagem e restaurantes — concluído
 6. Favoritos e salvos do turista
 
 Os specs de design ficam em `docs/superpowers/specs`.
