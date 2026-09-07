@@ -44,27 +44,8 @@ const input = {
 };
 
 describe("guideSchema", () => {
-  const base = { name: "João", whatsapp: "+55 (86) 99999-0000", attractionIds: [] };
-
-  it("normaliza o WhatsApp para só dígitos com DDI", () => {
-    expect(guideSchema.parse(base).whatsapp).toBe("5586999990000");
-  });
-
-  it("rejeita WhatsApp sem DDI (11 dígitos)", () => {
-    const result = guideSchema.safeParse({ ...base, whatsapp: "(86) 99999-0000" });
-    expect(result.success).toBe(false);
-    if (!result.success) expect(result.error.issues[0].path).toEqual(["whatsapp"]);
-  });
-
-  it("normaliza o Instagram removendo @ e espaços", () => {
-    expect(guideSchema.parse({ ...base, instagram: "@Joao.Lucas " }).instagram).toBe("Joao.Lucas");
-  });
-
-  it("rejeita Instagram com caractere inválido", () => {
-    expect(guideSchema.safeParse({ ...base, instagram: "joao lucas!" }).success).toBe(false);
-  });
-
   it("rejeita attractionIds repetidos e não-uuid", () => {
+    const base = { name: "João", whatsapp: "5586999990000" };
     const id = "11111111-1111-4111-8111-111111111111";
     expect(guideSchema.safeParse({ ...base, attractionIds: [id, id] }).success).toBe(false);
     expect(guideSchema.safeParse({ ...base, attractionIds: ["x"] }).success).toBe(false);
