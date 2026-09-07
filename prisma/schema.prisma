@@ -106,3 +106,44 @@ model Guide {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 }
+
+enum EstablishmentType {
+  HOSPEDAGEM
+  RESTAURANTE
+}
+
+enum PriceRange {
+  BAIXO
+  MEDIO
+  ALTO
+}
+
+model Establishment {
+  id           String               @id @default(uuid())
+  type         EstablishmentType
+  name         String
+  description  String
+  latitude     Float
+  longitude    Float
+  address      String
+  whatsapp     String
+  instagram    String?
+  openingHours String?
+  priceRange   PriceRange
+  highlights   String?
+  coverPhotoId String?              @unique
+  coverPhoto   EstablishmentPhoto?  @relation("EstablishmentCover", fields: [coverPhotoId], references: [id], onDelete: SetNull)
+  photos       EstablishmentPhoto[] @relation("EstablishmentGallery")
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+}
+
+model EstablishmentPhoto {
+  id              String         @id @default(uuid())
+  establishmentId String
+  establishment   Establishment  @relation("EstablishmentGallery", fields: [establishmentId], references: [id], onDelete: Cascade)
+  coverOf         Establishment? @relation("EstablishmentCover")
+  url             String
+  position        Int
+  createdAt       DateTime       @default(now())
+}
