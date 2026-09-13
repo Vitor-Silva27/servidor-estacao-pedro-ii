@@ -148,6 +148,52 @@ Hospedagens e restaurantes são o mesmo recurso, `Establishment`, com `type` igu
 
 WhatsApp e Instagram seguem as mesmas regras dos guias. Cache de 60 segundos nas leituras, invalidado em toda escrita. Não há seed: o admin cadastra pelo app.
 
+## Deploy em produção
+
+`docker-compose.prod.yml` sobe a API, Postgres, Redis e um Caddy próprio como um projeto Compose isolado (`estacao-pedro-ii`). Nada é compartilhado com outros projetos na mesma máquina: rede, volumes e containers são exclusivos, e Postgres e Redis não publicam porta nenhuma no host.
+
+O HTTPS usa um nome gratuito do [DuckDNS](https://www.duckdns.org). O Caddy emite o certificado por validação DNS, então não precisa das portas 80 e 443. A API fica em `https://<DOMAIN>:<PUBLIC_PORT>` (padrão 8443), e o app aponta `EXPO_PUBLIC_API_URL` para essa URL.
+
+### Primeira vez
+
+1. No DuckDNS, crie um subdomínio apontando para o IP da VPS e anote o token.
+2. Na VPS, clone o repositório e configure o ambiente:
+
+   ```bash
+   git clone <url-do-repo> estacao-pedro-ii-api
+   cd estacao-pedro-ii-api
+   cp .env.production.example .env
+   nano .env   # DOMAIN, DUCKDNS_TOKEN, ACME_EMAIL, senhas e segredos (openssl rand -hex 32)
+   ```
+
+3. Libere a porta no firewall, se houver um ativo (`sudo ufw allow 8443/tcp`).
+4. Suba tudo e crie o admin:
+
+   ```bash
+   docker compose -f docker-compose.prod.yml up -d --build
+   docker compose -f docker-compose.prod.yml exec api npx prisma db seed
+   ```
+
+5. Confira: `curl https://<DOMAIN>:8443/health` deve responder `{"status":"ok",...}`. O Swagger fica em `https://<DOMAIN>:8443/docs`.
+
+As migrations rodam sozinhas a cada subida da API. O seed é idempotente e pode ser rodado de novo sem duplicar nada. Uploads, banco, Redis e certificados ficam em volumes nomeados e sobrevivem a rebuilds.
+
+### Atualizar
+
+```bash
+git pull
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+### Útil
+
+```bash
+docker compose -f docker-compose.prod.yml logs -f api      # logs da API
+docker compose -f docker-compose.prod.yml logs -f caddy    # emissão do certificado
+docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml down             # para tudo, mantém os volumes
+```
+
 ## Estrutura
 
 ```
