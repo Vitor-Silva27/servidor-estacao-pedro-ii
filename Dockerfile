@@ -19,6 +19,9 @@ COPY --from=build /app/package*.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/prisma ./prisma
+# src/ (com o Prisma Client gerado) é necessário para o seed rodar com tsx na imagem de produção
+COPY --from=build /app/src ./src
+COPY --from=build /app/tsconfig.json ./
 COPY --from=build /app/prisma.config.ts ./
 COPY --from=build /app/docs/openapi.yaml ./docs/openapi.yaml
 RUN mkdir -p uploads
