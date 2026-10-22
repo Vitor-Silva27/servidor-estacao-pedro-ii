@@ -4,6 +4,7 @@ import { authenticate } from "../../shared/middlewares/authenticate";
 import { authorize } from "../../shared/middlewares/authorize";
 import { uploadImage } from "../../shared/middlewares/upload";
 import { validate } from "../../shared/middlewares/validate";
+import { photoUploadBodySchema, updatePhotoSchema } from "../../shared/photos/photos";
 import { createEventsController } from "./events.controller";
 import {
   eventCoverSchema,
@@ -27,7 +28,13 @@ export function createEventsRouter(service: EventsService, tokens: TokenService)
   router.put("/:id", ...admin, byId, body, controller.update);
   router.delete("/:id", ...admin, byId, controller.remove);
 
-  router.post("/:id/photos", ...admin, byId, uploadImage, controller.addPhoto);
+  router.post("/:id/photos", ...admin, byId, uploadImage, validate({ body: photoUploadBodySchema }), controller.addPhoto);
+  router.patch(
+    "/:id/photos/:photoId",
+    ...admin,
+    validate({ params: eventPhotoParamsSchema, body: updatePhotoSchema }),
+    controller.updatePhoto,
+  );
   router.delete("/:id/photos/:photoId", ...admin, validate({ params: eventPhotoParamsSchema }), controller.removePhoto);
   router.put("/:id/cover", ...admin, byId, validate({ body: eventCoverSchema }), controller.setCover);
 

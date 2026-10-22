@@ -37,7 +37,7 @@ const listKey = (type?: EstablishmentType) => `establishments:list:${type ?? "al
 const detailKey = (id: string) => `establishments:${id}`;
 
 function toPhoto(photo: PhotoRow): PhotoRow {
-  return { id: photo.id, url: photo.url, position: photo.position };
+  return { id: photo.id, url: photo.url, credit: photo.credit, position: photo.position };
 }
 
 function toSummary(row: EstablishmentRecord): EstablishmentSummary {
@@ -128,6 +128,13 @@ export class EstablishmentsService {
     const created = await this.photos.add(existing, photo);
     await this.invalidate(id, existing.type);
     return created;
+  }
+
+  async updatePhoto(id: string, photoId: string, credit: string | null): Promise<PhotoRow> {
+    const existing = await this.require(id);
+    const updated = await this.photos.setCredit(existing, photoId, credit);
+    await this.invalidate(id, existing.type);
+    return updated;
   }
 
   async removePhoto(id: string, photoId: string): Promise<void> {

@@ -6,7 +6,7 @@ import type { AttractionRecord, AttractionsRepository, PhotoRecord } from "./att
 import { AttractionsService } from "./attractions.service";
 
 function photo(id: string, position: number, attractionId = "a1"): PhotoRecord {
-  return { id, attractionId, url: `/uploads/attractions/${attractionId}/${id}.jpg`, position, createdAt: new Date() };
+  return { id, attractionId, url: `/uploads/attractions/${attractionId}/${id}.jpg`, credit: null, position, createdAt: new Date() };
 }
 
 function record(overrides: Partial<AttractionRecord> = {}): AttractionRecord {
@@ -48,6 +48,7 @@ function setup() {
   const cache = { get: jest.fn(), set: jest.fn(), del: jest.fn() } as unknown as jest.Mocked<Cache>;
   const photos = {
     add: jest.fn(),
+    setCredit: jest.fn(),
     remove: jest.fn(),
     setCover: jest.fn(),
     removeAll: jest.fn(),
@@ -112,8 +113,8 @@ describe("AttractionsService.getById", () => {
 
     expect(result.coverUrl).toBe("/uploads/attractions/a1/p2.jpg");
     expect(result.photos).toEqual([
-      { id: "p1", url: "/uploads/attractions/a1/p1.jpg", position: 1 },
-      { id: "p2", url: "/uploads/attractions/a1/p2.jpg", position: 2 },
+      { id: "p1", url: "/uploads/attractions/a1/p1.jpg", credit: null, position: 1 },
+      { id: "p2", url: "/uploads/attractions/a1/p2.jpg", credit: null, position: 2 },
     ]);
     expect(result.createdAt).toBe("2026-01-01T00:00:00.000Z");
     expect(result).not.toHaveProperty("coverPhoto");
@@ -237,12 +238,12 @@ describe("AttractionsService fotos", () => {
     const { repo, cache, photos, service } = setup();
     const existing = record();
     repo.findById.mockResolvedValue(existing);
-    photos.add.mockResolvedValue({ id: "p1", url: "/uploads/attractions/a1/p1.jpg", position: 1 });
+    photos.add.mockResolvedValue({ id: "p1", url: "/uploads/attractions/a1/p1.jpg", credit: null, position: 1 });
 
     const result = await service.addPhoto("a1", { buffer: Buffer.from("x"), ext: "jpg" });
 
     expect(photos.add).toHaveBeenCalledWith(existing, { buffer: Buffer.from("x"), ext: "jpg" });
-    expect(result).toEqual({ id: "p1", url: "/uploads/attractions/a1/p1.jpg", position: 1 });
+    expect(result).toEqual({ id: "p1", url: "/uploads/attractions/a1/p1.jpg", credit: null, position: 1 });
     expect(cache.del).toHaveBeenCalledWith("attractions:a1");
   });
 
@@ -277,5 +278,20 @@ describe("AttractionsService fotos", () => {
     repo.findById.mockResolvedValue(record());
     photos.setCover.mockRejectedValue(new NotFoundError("Foto não encontrada"));
     await expect(service.setCover("a1", "p-outra")).rejects.toThrow(NotFoundError);
+  });
+});
+
+describe("updatePhoto", () => {
+  it("delega o crédito ao manager e invalida cache", async () => {
+    const { repo, cache, photos, service } = setup();
+    const existing = record({ photos: [photo("p1", 1)] });
+    repo.findById.mockResolvedValue(existing);
+    photos.setCredit.mockResolvedValue({ ...photo("p1", 1), credit: "Maria Souza" });
+
+    const result = await service.updatePhoto("a1", "p1", "Maria Souza");
+
+    expect(photos.setCredit).toHaveBeenCalledWith(existing, "p1", "Maria Souza");
+    expect(result.credit).toBe("Maria Souza");
+    expect(cache.del).toHaveBeenCalledWith("attractions:a1");
   });
 });

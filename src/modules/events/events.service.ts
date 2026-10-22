@@ -30,7 +30,7 @@ const listKey = (scope: EventScope) => `events:list:${scope}`;
 const detailKey = (id: string) => `events:${id}`;
 
 function toPhoto(photo: PhotoRow): PhotoRow {
-  return { id: photo.id, url: photo.url, position: photo.position };
+  return { id: photo.id, url: photo.url, credit: photo.credit, position: photo.position };
 }
 
 function toSummary(row: EventRecord): EventSummary {
@@ -119,6 +119,13 @@ export class EventsService {
     const created = await this.photos.add(existing, photo);
     await this.invalidate(id);
     return created;
+  }
+
+  async updatePhoto(id: string, photoId: string, credit: string | null): Promise<PhotoRow> {
+    const existing = await this.require(id);
+    const updated = await this.photos.setCredit(existing, photoId, credit);
+    await this.invalidate(id);
+    return updated;
   }
 
   async removePhoto(id: string, photoId: string): Promise<void> {

@@ -63,6 +63,7 @@ model AttractionPhoto {
   attraction   Attraction  @relation("Gallery", fields: [attractionId], references: [id], onDelete: Cascade)
   coverOf      Attraction? @relation("Cover")
   url          String
+  credit       String?
   position     Int
   createdAt    DateTime    @default(now())
 }
@@ -91,6 +92,7 @@ model EventPhoto {
   event     Event    @relation("EventGallery", fields: [eventId], references: [id], onDelete: Cascade)
   coverOf   Event?   @relation("EventCover")
   url       String
+  credit    String?
   position  Int
   createdAt DateTime @default(now())
 }
@@ -144,6 +146,7 @@ model EstablishmentPhoto {
   establishment   Establishment  @relation("EstablishmentGallery", fields: [establishmentId], references: [id], onDelete: Cascade)
   coverOf         Establishment? @relation("EstablishmentCover")
   url             String
+  credit          String?
   position        Int
   createdAt       DateTime       @default(now())
 }

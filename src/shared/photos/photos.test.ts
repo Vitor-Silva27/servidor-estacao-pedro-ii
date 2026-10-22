@@ -1,9 +1,16 @@
 import { NotFoundError } from "../errors/AppError";
 import type { Storage } from "../storage/storage";
-import { createPhotoManager, type PhotoOwner, type PhotoRepository, type PhotoRow } from "./photos";
+import {
+  createPhotoManager,
+  photoUploadBodySchema,
+  updatePhotoSchema,
+  type PhotoOwner,
+  type PhotoRepository,
+  type PhotoRow,
+} from "./photos";
 
 function photo(id: string, position: number): PhotoRow {
-  return { id, url: `/uploads/things/o1/${id}.jpg`, position };
+  return { id, url: `/uploads/things/o1/${id}.jpg`, credit: null, position };
 }
 
 function owner(overrides: Partial<PhotoOwner> = {}): PhotoOwner {
@@ -13,6 +20,7 @@ function owner(overrides: Partial<PhotoOwner> = {}): PhotoOwner {
 function setup() {
   const repo = {
     addPhoto: jest.fn(),
+    updatePhotoCredit: jest.fn(),
     deletePhoto: jest.fn(),
     setCover: jest.fn(),
   } as unknown as jest.Mocked<PhotoRepository>;
@@ -30,9 +38,9 @@ describe("photoManager.add", () => {
     const result = await manager.add(owner(), { buffer: Buffer.from("x"), ext: "jpg" });
 
     expect(storage.save).toHaveBeenCalledWith("things/o1", "jpg", Buffer.from("x"));
-    expect(repo.addPhoto).toHaveBeenCalledWith("o1", "/uploads/things/o1/p1.jpg");
+    expect(repo.addPhoto).toHaveBeenCalledWith("o1", "/uploads/things/o1/p1.jpg", null);
     expect(repo.setCover).toHaveBeenCalledWith("o1", "p1");
-    expect(result).toEqual({ id: "p1", url: "/uploads/things/o1/p1.jpg", position: 1 });
+    expect(result).toEqual({ id: "p1", url: "/uploads/things/o1/p1.jpg", credit: null, position: 1 });
   });
 
   it("não mexe na capa quando já existe", async () => {
@@ -43,6 +51,54 @@ describe("photoManager.add", () => {
     await manager.add(owner({ coverPhotoId: "p1", photos: [photo("p1", 1)] }), { buffer: Buffer.from("x"), ext: "jpg" });
 
     expect(repo.setCover).not.toHaveBeenCalled();
+  });
+
+  it("grava o crédito informado", async () => {
+    const { repo, storage, manager } = setup();
+    storage.save.mockResolvedValue("/uploads/things/o1/p1.jpg");
+    repo.addPhoto.mockResolvedValue({ ...photo("p1", 1), credit: "Maria Souza" });
+
+    const result = await manager.add(owner(), { buffer: Buffer.from("x"), ext: "jpg", credit: "Maria Souza" });
+
+    expect(repo.addPhoto).toHaveBeenCalledWith("o1", "/uploads/things/o1/p1.jpg", "Maria Souza");
+    expect(result.credit).toBe("Maria Souza");
+  });
+});
+
+describe("photoManager.setCredit", () => {
+  it("atualiza o crédito de uma foto do dono", async () => {
+    const { repo, manager } = setup();
+    repo.updatePhotoCredit.mockResolvedValue({ ...photo("p1", 1), credit: "João" });
+
+    const result = await manager.setCredit(owner({ photos: [photo("p1", 1)] }), "p1", "João");
+
+    expect(repo.updatePhotoCredit).toHaveBeenCalledWith("p1", "João");
+    expect(result).toEqual({ id: "p1", url: "/uploads/things/o1/p1.jpg", credit: "João", position: 1 });
+  });
+
+  it("lança 404 com foto de outro dono", async () => {
+    const { repo, manager } = setup();
+    await expect(manager.setCredit(owner({ photos: [photo("p1", 1)] }), "p9", "João")).rejects.toThrow(NotFoundError);
+    expect(repo.updatePhotoCredit).not.toHaveBeenCalled();
+  });
+});
+
+describe("schemas de crédito", () => {
+  it("upload sem crédito, vazio ou só espaços vira null", () => {
+    expect(photoUploadBodySchema.parse({})).toEqual({ credit: null });
+    expect(photoUploadBodySchema.parse({ credit: "" })).toEqual({ credit: null });
+    expect(photoUploadBodySchema.parse({ credit: "   " })).toEqual({ credit: null });
+  });
+
+  it("apara espaços e limita a 120 caracteres", () => {
+    expect(photoUploadBodySchema.parse({ credit: "  Maria Souza " })).toEqual({ credit: "Maria Souza" });
+    expect(() => photoUploadBodySchema.parse({ credit: "x".repeat(121) })).toThrow();
+  });
+
+  it("PATCH aceita null para limpar e rejeita chaves desconhecidas", () => {
+    expect(updatePhotoSchema.parse({ credit: null })).toEqual({ credit: null });
+    expect(() => updatePhotoSchema.parse({ credit: "a", url: "/x" })).toThrow();
+    expect(() => updatePhotoSchema.parse({})).toThrow();
   });
 });
 

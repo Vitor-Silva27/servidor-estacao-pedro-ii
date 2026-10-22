@@ -85,7 +85,8 @@ Leitura é pública. Escrita exige `ADMIN`.
 | POST | `/api/v1/attractions` | Cria |
 | PUT | `/api/v1/attractions/:id` | Atualiza (o tipo não muda) |
 | DELETE | `/api/v1/attractions/:id` | Apaga registro, fotos e arquivos |
-| POST | `/api/v1/attractions/:id/photos` | Upload multipart no campo `file` (JPEG, PNG ou WebP até 5 MB). A primeira foto vira capa |
+| POST | `/api/v1/attractions/:id/photos` | Upload multipart no campo `file` (JPEG, PNG ou WebP até 5 MB) e campo de texto opcional `credit` (fonte da foto, até 120 caracteres). A primeira foto vira capa |
+| PATCH | `/api/v1/attractions/:id/photos/:photoId` | Altera a fonte da foto com `{ credit }`; `null` ou `""` limpa |
 | DELETE | `/api/v1/attractions/:id/photos/:photoId` | Remove a foto; se era capa, a próxima assume |
 | PUT | `/api/v1/attractions/:id/cover` | Define a capa com `{ photoId }` |
 
@@ -106,7 +107,8 @@ Eventos têm período real (`startsAt` e `endsAt`, ISO 8601), uma nota de data o
 | POST | `/api/v1/events` | Cria |
 | PUT | `/api/v1/events/:id` | Atualiza |
 | DELETE | `/api/v1/events/:id` | Apaga registro, fotos e arquivos |
-| POST | `/api/v1/events/:id/photos` | Upload no campo `file` |
+| POST | `/api/v1/events/:id/photos` | Upload no campo `file`, com `credit` opcional |
+| PATCH | `/api/v1/events/:id/photos/:photoId` | Altera a fonte com `{ credit }` |
 | DELETE | `/api/v1/events/:id/photos/:photoId` | Remove a foto |
 | PUT | `/api/v1/events/:id/cover` | Define a capa |
 
@@ -142,7 +144,8 @@ Hospedagens e restaurantes são o mesmo recurso, `Establishment`, com `type` igu
 | POST | `/api/v1/establishments` | Cria |
 | PUT | `/api/v1/establishments/:id` | Atualiza (o tipo não muda) |
 | DELETE | `/api/v1/establishments/:id` | Apaga registro, fotos e arquivos |
-| POST | `/api/v1/establishments/:id/photos` | Upload no campo `file` |
+| POST | `/api/v1/establishments/:id/photos` | Upload no campo `file`, com `credit` opcional |
+| PATCH | `/api/v1/establishments/:id/photos/:photoId` | Altera a fonte com `{ credit }` |
 | DELETE | `/api/v1/establishments/:id/photos/:photoId` | Remove a foto |
 | PUT | `/api/v1/establishments/:id/cover` | Define a capa |
 

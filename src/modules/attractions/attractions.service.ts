@@ -45,7 +45,7 @@ const listKey = (type?: AttractionType) => `attractions:list:${type ?? "all"}`;
 const detailKey = (id: string) => `attractions:${id}`;
 
 function toPhoto(photo: PhotoRow): PhotoOutput {
-  return { id: photo.id, url: photo.url, position: photo.position };
+  return { id: photo.id, url: photo.url, credit: photo.credit, position: photo.position };
 }
 
 function toSummary(row: AttractionRecord): AttractionSummary {
@@ -141,6 +141,13 @@ export class AttractionsService {
     const created = await this.photos.add(existing, photo);
     await this.invalidate(id, existing.type);
     return created;
+  }
+
+  async updatePhoto(id: string, photoId: string, credit: string | null): Promise<PhotoOutput> {
+    const existing = await this.require(id);
+    const updated = await this.photos.setCredit(existing, photoId, credit);
+    await this.invalidate(id, existing.type);
+    return updated;
   }
 
   async removePhoto(id: string, photoId: string): Promise<void> {

@@ -8,7 +8,7 @@ import { EventsService } from "./events.service";
 const NOW = new Date("2026-09-06T12:00:00Z");
 
 function photo(id: string, position: number, eventId = "e1"): EventPhotoRecord {
-  return { id, eventId, url: `/uploads/events/${eventId}/${id}.jpg`, position, createdAt: new Date() };
+  return { id, eventId, url: `/uploads/events/${eventId}/${id}.jpg`, credit: null, position, createdAt: new Date() };
 }
 
 function record(overrides: Partial<EventRecord> = {}): EventRecord {
@@ -46,6 +46,7 @@ function setup() {
   const cache = { get: jest.fn(), set: jest.fn(), del: jest.fn() } as unknown as jest.Mocked<Cache>;
   const photos = {
     add: jest.fn(),
+    setCredit: jest.fn(),
     remove: jest.fn(),
     setCover: jest.fn(),
     removeAll: jest.fn(),
@@ -140,7 +141,7 @@ describe("EventsService.getById", () => {
 
     const result = await service.getById("e1");
 
-    expect(result.photos).toEqual([{ id: "p1", url: "/uploads/events/e1/p1.jpg", position: 1 }]);
+    expect(result.photos).toEqual([{ id: "p1", url: "/uploads/events/e1/p1.jpg", credit: null, position: 1 }]);
     expect(result.tips).toBe("Leve agasalho");
     expect(result.createdAt).toBe("2026-01-01T00:00:00.000Z");
     expect(result).not.toHaveProperty("coverPhoto");
@@ -203,11 +204,12 @@ describe("EventsService.remove e fotos", () => {
     const { repo, cache, photos, service } = setup();
     const existing = record({ photos: [photo("p1", 1)] });
     repo.findById.mockResolvedValue(existing);
-    photos.add.mockResolvedValue({ id: "p2", url: "/uploads/events/e1/p2.jpg", position: 2 });
+    photos.add.mockResolvedValue({ id: "p2", url: "/uploads/events/e1/p2.jpg", credit: null, position: 2 });
 
     await expect(service.addPhoto("e1", { buffer: Buffer.from("x"), ext: "jpg" })).resolves.toEqual({
       id: "p2",
       url: "/uploads/events/e1/p2.jpg",
+      credit: null,
       position: 2,
     });
     expect(photos.add).toHaveBeenCalledWith(existing, { buffer: Buffer.from("x"), ext: "jpg" });
@@ -218,6 +220,21 @@ describe("EventsService.remove e fotos", () => {
     await service.setCover("e1", "p1");
     expect(photos.setCover).toHaveBeenCalledWith(existing, "p1");
 
+    expect(cache.del).toHaveBeenCalledWith("events:e1");
+  });
+});
+
+describe("updatePhoto", () => {
+  it("delega o crédito ao manager e invalida cache", async () => {
+    const { repo, cache, photos, service } = setup();
+    const existing = record({ photos: [photo("p1", 1)] });
+    repo.findById.mockResolvedValue(existing);
+    photos.setCredit.mockResolvedValue({ ...photo("p1", 1), credit: "Maria Souza" });
+
+    const result = await service.updatePhoto("e1", "p1", "Maria Souza");
+
+    expect(photos.setCredit).toHaveBeenCalledWith(existing, "p1", "Maria Souza");
+    expect(result.credit).toBe("Maria Souza");
     expect(cache.del).toHaveBeenCalledWith("events:e1");
   });
 });

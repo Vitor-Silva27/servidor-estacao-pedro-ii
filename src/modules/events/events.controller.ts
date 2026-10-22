@@ -32,7 +32,11 @@ export function createEventsController(service: EventsService) {
     if (!file) throw new ValidationError([{ path: "file", message: "Arquivo obrigatório" }]);
     const ext = extensionFor(file.mimetype);
     if (!ext) throw new ValidationError([{ path: "file", message: "Formato inválido. Use JPEG, PNG ou WebP" }]);
-    res.status(201).json(await service.addPhoto(req.params.id as string, { buffer: file.buffer, ext }));
+    res.status(201).json(await service.addPhoto(req.params.id as string, { buffer: file.buffer, ext, credit: req.body.credit }));
+  };
+
+  const updatePhoto: RequestHandler = async (req, res) => {
+    res.json(await service.updatePhoto(req.params.id as string, req.params.photoId as string, req.body.credit));
   };
 
   const removePhoto: RequestHandler = async (req, res) => {
@@ -44,5 +48,5 @@ export function createEventsController(service: EventsService) {
     res.json(await service.setCover(req.params.id as string, req.body.photoId));
   };
 
-  return { list, getById, create, update, remove, addPhoto, removePhoto, setCover };
+  return { list, getById, create, update, remove, addPhoto, updatePhoto, removePhoto, setCover };
 }

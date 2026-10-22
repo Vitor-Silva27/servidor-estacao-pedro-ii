@@ -4,6 +4,7 @@ import { authenticate } from "../../shared/middlewares/authenticate";
 import { authorize } from "../../shared/middlewares/authorize";
 import { uploadImage } from "../../shared/middlewares/upload";
 import { validate } from "../../shared/middlewares/validate";
+import { photoUploadBodySchema, updatePhotoSchema } from "../../shared/photos/photos";
 import { createEstablishmentsController } from "./establishments.controller";
 import {
   createEstablishmentSchema,
@@ -27,7 +28,13 @@ export function createEstablishmentsRouter(service: EstablishmentsService, token
   router.put("/:id", ...admin, byId, validate({ body: establishmentFieldsSchema }), controller.update);
   router.delete("/:id", ...admin, byId, controller.remove);
 
-  router.post("/:id/photos", ...admin, byId, uploadImage, controller.addPhoto);
+  router.post("/:id/photos", ...admin, byId, uploadImage, validate({ body: photoUploadBodySchema }), controller.addPhoto);
+  router.patch(
+    "/:id/photos/:photoId",
+    ...admin,
+    validate({ params: establishmentPhotoParamsSchema, body: updatePhotoSchema }),
+    controller.updatePhoto,
+  );
   router.delete("/:id/photos/:photoId", ...admin, validate({ params: establishmentPhotoParamsSchema }), controller.removePhoto);
   router.put("/:id/cover", ...admin, byId, validate({ body: establishmentCoverSchema }), controller.setCover);
 

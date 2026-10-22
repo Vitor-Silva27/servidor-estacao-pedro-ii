@@ -41,14 +41,18 @@ export class EstablishmentsRepository {
     await this.db.establishment.delete({ where: { id } });
   }
 
-  async addPhoto(establishmentId: string, url: string): Promise<EstablishmentPhotoRecord> {
+  async addPhoto(establishmentId: string, url: string, credit: string | null): Promise<EstablishmentPhotoRecord> {
     const last = await this.db.establishmentPhoto.findFirst({
       where: { establishmentId },
       orderBy: { position: "desc" },
     });
     return this.db.establishmentPhoto.create({
-      data: { establishmentId, url, position: (last?.position ?? 0) + 1 },
+      data: { establishmentId, url, credit, position: (last?.position ?? 0) + 1 },
     });
+  }
+
+  updatePhotoCredit(photoId: string, credit: string | null): Promise<EstablishmentPhotoRecord> {
+    return this.db.establishmentPhoto.update({ where: { id: photoId }, data: { credit } });
   }
 
   async deletePhoto(photoId: string): Promise<void> {

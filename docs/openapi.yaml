@@ -265,6 +265,10 @@ paths:
                   type: string
                   format: binary
                   description: JPEG, PNG ou WebP até 5 MB
+                credit:
+                  type: string
+                  maxLength: 120
+                  description: Fonte/crédito da foto (quem tirou). Opcional.
       responses:
         "201":
           description: Foto criada
@@ -287,6 +291,34 @@ paths:
         name: photoId
         required: true
         schema: { type: string, format: uuid }
+    patch:
+      tags: [Attractions]
+      summary: Altera a fonte/crédito de uma foto (admin). null ou "" limpa.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [credit]
+              properties:
+                credit: { type: string, nullable: true, maxLength: 120 }
+      responses:
+        "200":
+          description: Foto atualizada
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AttractionPhoto" }
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
     delete:
       tags: [Attractions]
       summary: Remove uma foto (admin). Se era a capa, a próxima assume.
@@ -447,6 +479,10 @@ paths:
                   type: string
                   format: binary
                   description: JPEG, PNG ou WebP até 5 MB
+                credit:
+                  type: string
+                  maxLength: 120
+                  description: Fonte/crédito da foto (quem tirou). Opcional.
       responses:
         "201":
           description: Foto criada
@@ -469,6 +505,34 @@ paths:
         name: photoId
         required: true
         schema: { type: string, format: uuid }
+    patch:
+      tags: [Events]
+      summary: Altera a fonte/crédito de uma foto (admin). null ou "" limpa.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [credit]
+              properties:
+                credit: { type: string, nullable: true, maxLength: 120 }
+      responses:
+        "200":
+          description: Foto atualizada
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AttractionPhoto" }
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
     delete:
       tags: [Events]
       summary: Remove uma foto (admin). Se era a capa, a próxima assume.
@@ -751,6 +815,10 @@ paths:
                   type: string
                   format: binary
                   description: JPEG, PNG ou WebP até 5 MB
+                credit:
+                  type: string
+                  maxLength: 120
+                  description: Fonte/crédito da foto (quem tirou). Opcional.
       responses:
         "201":
           description: Foto criada
@@ -773,6 +841,34 @@ paths:
         name: photoId
         required: true
         schema: { type: string, format: uuid }
+    patch:
+      tags: [Establishments]
+      summary: Altera a fonte/crédito de uma foto (admin). null ou "" limpa.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [credit]
+              properties:
+                credit: { type: string, nullable: true, maxLength: 120 }
+      responses:
+        "200":
+          description: Foto atualizada
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AttractionPhoto" }
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
     delete:
       tags: [Establishments]
       summary: Remove uma foto (admin). Se era a capa, a próxima assume.
@@ -949,6 +1045,7 @@ components:
       properties:
         id: { type: string, format: uuid }
         url: { type: string, example: /uploads/attractions/uuid/uuid.jpg, description: Relativa à raiz da API }
+        credit: { type: string, nullable: true, description: "Fonte/crédito da foto, exibido abaixo da imagem" }
         position: { type: integer }
 
     AttractionSummary:

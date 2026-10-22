@@ -41,14 +41,18 @@ export class EventsRepository {
     await this.db.event.delete({ where: { id } });
   }
 
-  async addPhoto(eventId: string, url: string): Promise<EventPhotoRecord> {
+  async addPhoto(eventId: string, url: string, credit: string | null): Promise<EventPhotoRecord> {
     const last = await this.db.eventPhoto.findFirst({
       where: { eventId },
       orderBy: { position: "desc" },
     });
     return this.db.eventPhoto.create({
-      data: { eventId, url, position: (last?.position ?? 0) + 1 },
+      data: { eventId, url, credit, position: (last?.position ?? 0) + 1 },
     });
+  }
+
+  updatePhotoCredit(photoId: string, credit: string | null): Promise<EventPhotoRecord> {
+    return this.db.eventPhoto.update({ where: { id: photoId }, data: { credit } });
   }
 
   async deletePhoto(photoId: string): Promise<void> {

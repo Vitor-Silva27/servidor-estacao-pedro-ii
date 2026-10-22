@@ -161,6 +161,58 @@ describe("atrações", () => {
     expect(cover.body.coverUrl).toBe(res.body.url);
   });
 
+  it("crédito opcional no upload e editável via PATCH", async () => {
+    const before = await request(app).get(`/api/v1/attractions/${waterfallId}`);
+    expect(before.body.photos.map((p: { credit: unknown }) => p.credit)).toEqual([null, null]);
+
+    const res = await request(app)
+      .post(`/api/v1/attractions/${waterfallId}/photos`)
+      .set("Authorization", `Bearer ${admin}`)
+      .field("credit", "  Maria Souza ")
+      .attach("file", PIXEL);
+    expect(res.status).toBe(201);
+    expect(res.body.credit).toBe("Maria Souza");
+    const creditedId = res.body.id;
+
+    const patched = await request(app)
+      .patch(`/api/v1/attractions/${waterfallId}/photos/${firstPhotoId}`)
+      .set("Authorization", `Bearer ${admin}`)
+      .send({ credit: "João Lucas" });
+    expect(patched.status).toBe(200);
+    expect(patched.body).toMatchObject({ id: firstPhotoId, credit: "João Lucas" });
+
+    const detail = await request(app).get(`/api/v1/attractions/${waterfallId}`);
+    expect(detail.body.photos.find((p: { id: string }) => p.id === firstPhotoId).credit).toBe("João Lucas");
+
+    const cleared = await request(app)
+      .patch(`/api/v1/attractions/${waterfallId}/photos/${firstPhotoId}`)
+      .set("Authorization", `Bearer ${admin}`)
+      .send({ credit: "" });
+    expect(cleared.body.credit).toBeNull();
+
+    const tooLong = await request(app)
+      .patch(`/api/v1/attractions/${waterfallId}/photos/${firstPhotoId}`)
+      .set("Authorization", `Bearer ${admin}`)
+      .send({ credit: "x".repeat(121) });
+    expect(tooLong.status).toBe(400);
+
+    const missing = await request(app)
+      .patch(`/api/v1/attractions/${waterfallId}/photos/00000000-0000-4000-8000-000000000000`)
+      .set("Authorization", `Bearer ${admin}`)
+      .send({ credit: "x" });
+    expect(missing.status).toBe(404);
+
+    const anon = await request(app)
+      .patch(`/api/v1/attractions/${waterfallId}/photos/${firstPhotoId}`)
+      .send({ credit: "x" });
+    expect(anon.status).toBe(401);
+
+    const del = await request(app)
+      .delete(`/api/v1/attractions/${waterfallId}/photos/${creditedId}`)
+      .set("Authorization", `Bearer ${admin}`);
+    expect(del.status).toBe(204);
+  });
+
   it("DELETE da capa promove a outra foto", async () => {
     const del = await request(app)
       .delete(`/api/v1/attractions/${waterfallId}/photos/${secondPhotoId}`)

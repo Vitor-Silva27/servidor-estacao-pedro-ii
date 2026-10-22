@@ -6,7 +6,7 @@ import { createEstablishmentSchema, establishmentFieldsSchema } from "./establis
 import { EstablishmentsService } from "./establishments.service";
 
 function photo(id: string, position: number, establishmentId = "s1"): EstablishmentPhotoRecord {
-  return { id, establishmentId, url: `/uploads/establishments/${establishmentId}/${id}.jpg`, position, createdAt: new Date() };
+  return { id, establishmentId, url: `/uploads/establishments/${establishmentId}/${id}.jpg`, credit: null, position, createdAt: new Date() };
 }
 
 function record(overrides: Partial<EstablishmentRecord> = {}): EstablishmentRecord {
@@ -46,6 +46,7 @@ function setup() {
   const cache = { get: jest.fn(), set: jest.fn(), del: jest.fn() } as unknown as jest.Mocked<Cache>;
   const photos = {
     add: jest.fn(),
+    setCredit: jest.fn(),
     remove: jest.fn(),
     setCover: jest.fn(),
     removeAll: jest.fn(),
@@ -124,7 +125,7 @@ describe("EstablishmentsService.getById", () => {
 
     const result = await service.getById("s1");
 
-    expect(result.photos).toEqual([{ id: "p1", url: "/uploads/establishments/s1/p1.jpg", position: 1 }]);
+    expect(result.photos).toEqual([{ id: "p1", url: "/uploads/establishments/s1/p1.jpg", credit: null, position: 1 }]);
     expect(result.highlights).toBe("Música ao vivo");
     expect(result.whatsapp).toBe("5586999990000");
     expect(result.createdAt).toBe("2026-01-01T00:00:00.000Z");
@@ -200,11 +201,12 @@ describe("EstablishmentsService.remove e fotos", () => {
     const { repo, cache, photos, service } = setup();
     const existing = record({ photos: [photo("p1", 1)] });
     repo.findById.mockResolvedValue(existing);
-    photos.add.mockResolvedValue({ id: "p2", url: "/uploads/establishments/s1/p2.jpg", position: 2 });
+    photos.add.mockResolvedValue({ id: "p2", url: "/uploads/establishments/s1/p2.jpg", credit: null, position: 2 });
 
     await expect(service.addPhoto("s1", { buffer: Buffer.from("x"), ext: "jpg" })).resolves.toEqual({
       id: "p2",
       url: "/uploads/establishments/s1/p2.jpg",
+      credit: null,
       position: 2,
     });
     expect(photos.add).toHaveBeenCalledWith(existing, { buffer: Buffer.from("x"), ext: "jpg" });
@@ -215,6 +217,21 @@ describe("EstablishmentsService.remove e fotos", () => {
     await service.setCover("s1", "p1");
     expect(photos.setCover).toHaveBeenCalledWith(existing, "p1");
 
+    expect(cache.del).toHaveBeenCalledWith("establishments:s1");
+  });
+});
+
+describe("updatePhoto", () => {
+  it("delega o crédito ao manager e invalida cache", async () => {
+    const { repo, cache, photos, service } = setup();
+    const existing = record({ photos: [photo("p1", 1)] });
+    repo.findById.mockResolvedValue(existing);
+    photos.setCredit.mockResolvedValue({ ...photo("p1", 1), credit: "Maria Souza" });
+
+    const result = await service.updatePhoto("s1", "p1", "Maria Souza");
+
+    expect(photos.setCredit).toHaveBeenCalledWith(existing, "p1", "Maria Souza");
+    expect(result.credit).toBe("Maria Souza");
     expect(cache.del).toHaveBeenCalledWith("establishments:s1");
   });
 });

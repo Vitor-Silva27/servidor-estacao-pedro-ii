@@ -49,14 +49,18 @@ export class AttractionsRepository {
     await this.db.attraction.delete({ where: { id } });
   }
 
-  async addPhoto(attractionId: string, url: string): Promise<PhotoRecord> {
+  async addPhoto(attractionId: string, url: string, credit: string | null): Promise<PhotoRecord> {
     const last = await this.db.attractionPhoto.findFirst({
       where: { attractionId },
       orderBy: { position: "desc" },
     });
     return this.db.attractionPhoto.create({
-      data: { attractionId, url, position: (last?.position ?? 0) + 1 },
+      data: { attractionId, url, credit, position: (last?.position ?? 0) + 1 },
     });
+  }
+
+  updatePhotoCredit(photoId: string, credit: string | null): Promise<PhotoRecord> {
+    return this.db.attractionPhoto.update({ where: { id: photoId }, data: { credit } });
   }
 
   async deletePhoto(photoId: string): Promise<void> {
